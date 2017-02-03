@@ -3,7 +3,7 @@
 function [Ytmp,d]  = AlignSingleTrial_sequential(Y)
 [optimizer,metric] = imregconfig('monomodal');
 Fr = double(Y);
-Fr = Fr - imgaussfilt(Fr,15);
+%Fr = Fr - imgaussfilt(Fr,15);
 Ytmp = double(Y);
 d={}
 Npixels = numel(Y(:,:,1));

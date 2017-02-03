@@ -1,10 +1,10 @@
 function r = sbxalign2(Y,idx)
 [optimizer,metric] = imregconfig('monomodal');
 if(length(idx)==1)
- A = Y(:,:,idx);
- r.m = A; 
- r.T = {eye(3)};
- r.idx = idx;
+     A = Y(:,:,idx);
+     r.m = A; 
+     r.T = {eye(3)};
+     r.idx = idx;
 else
  idx0 = idx(1:floor(end/2)); % split into two groups
  idx1 = idx(floor(end/2)+1 : end);

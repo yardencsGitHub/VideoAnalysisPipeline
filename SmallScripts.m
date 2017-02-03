@@ -6,7 +6,8 @@ for fnum = 2:42
 end
 %% create a video from many max images of different trials 
 input_prefix = '';
-[FileName,PathName,FilterIndex] = uigetfile(fullfile(pwd,[input_prefix '*.mat']),'MultiSelect','on');
+%[FileName,PathName,FilterIndex] = uigetfile(fullfile(pwd,[input_prefix '*.mat']),'MultiSelect','on');
+
 res = zeros(240,320,numel(FileName));
 for fnum = 1:numel(FileName)
     load(fullfile(PathName,FileName{fnum}));
@@ -46,7 +47,7 @@ for fnum = 1:numel(d)
     save(['aligned_' d(fnum).name], 'Y','Ysiz','-v7.3');
 end
 %%
-d = dir('reduced_SingleTrial*.mat');
+d = dir('SingleTrial*.mat');
 res = zeros(240,320,42);
 for i = 1:numel(d)
     load(d(i).name);
@@ -63,17 +64,17 @@ for fnum = 1:numel(d)
 end
 write_mat_2_moviefile(res,['reduced_aligned' '.mp4'],'MPEG-4',0);
 %%
-d = dir('reduced_SingleTrial*.mat');
+d = dir('reduced_Single*.mat');
 res = zeros(240,320,42);
 for i = 1:numel(d)
     load(d(i).name);
-    res(:,:,i) = max(double(Y),[],3);
+    res(:,:,i) = std(double(Y),1,3);
 end
 [Ytmp,d1]  = AlignSingleTrial_sequential(res);
 %%
-d = dir('reduced_SingleTrial*.mat');
+d = dir('reduced_Single*.mat');
 for fnum = 1:41
-    load(d(i).name);
-    Y = imwarp(double(Y),d1{fnum},'OutputView',imref2d(size(Y(:,:,1))));
+    load(d(fnum).name);
+    Y = uint8(imwarp(double(Y),d1{fnum},'OutputView',imref2d(size(Y(:,:,1)))));
     save(['aligned_' d(fnum).name], 'Y','Ysiz','-v7.3');
 end

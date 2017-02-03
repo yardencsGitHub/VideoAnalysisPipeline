@@ -1,4 +1,4 @@
-% Take the movie Y [width x height x frames] and align frames to min
+% Take the movie Y [width x height x frames] and align frames 
 % consider changing to imregister
 function [Ytmp,d]  = AlignSingleTrial(Y)
 %X = (mean(double(Y(:,:,20:end)),3)); 
