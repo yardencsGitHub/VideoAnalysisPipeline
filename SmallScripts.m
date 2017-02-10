@@ -78,3 +78,23 @@ for fnum = 1:41
     Y = uint8(imwarp(double(Y),d1{fnum},'OutputView',imref2d(size(Y(:,:,1)))));
     save(['aligned_' d(fnum).name], 'Y','Ysiz','-v7.3');
 end
+
+%% use particle filtering to get MAP spike train (jovo - oopsi)
+addpath(genpath('/Users/yardenc/Documents/GitHub/oopsi'));
+clear V;
+F = CaRaster(1,:);
+F = resample(F,10,3);
+F = F - min(F); F = F+0.5; %F = F/max(F);
+
+T       = numel(F); % # of time steps
+V.dt    = 1/100;  % time step size
+
+% initialize params
+P.a     = 1;    % observation scale
+P.b     = 0;    % observation bias
+tau     = 1.5;    % decay time constant
+P.gam   = 1-V.dt/tau; % C(t) = gam*C(t-1)
+P.lam   = 0.1;  % firing rate = lam/dt
+P.sig   = 0.1;  % standard deviation of observation noise 
+
+[Nhat Phat] = fast_oopsi(F,V,P);

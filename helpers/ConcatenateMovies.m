@@ -1,4 +1,4 @@
-function [vidMat, vidTimes, Aud] = ConcatenateMovies(mov_files_list)
+function [vidMat, vidTimes, Aud] = ConcatenateMovies(mov_files_list,factor)
 Aud = struct('nrChannels',1,'bits',16,'nrFrames',0,'data',[],'rate',48000,'TotalDuration',0);
 vidMat = [];
 vidTimes = [];
@@ -12,10 +12,10 @@ for fnum = 1:numel(mov_files_list)
     if isfield(params.Aud,'TotalDuration')
         Aud.TotalDuration = Aud.TotalDuration + params.Aud.TotalDuration;
     end
-    vidMat = cat(3,vidMat,params.vidMat);
+    vidMat = cat(3,vidMat,imresize(params.vidMat,factor));
     if fnum == 1
         vidTimes = params.vidTimes;
     else
-        vidTimes = [vidTimes; 2*vidTimes(end) - vidTimes(end-1) + params.vidTimes];
+        vidTimes = [vidTimes 2*vidTimes(end) - vidTimes(end-1) + params.vidTimes];
     end
 end

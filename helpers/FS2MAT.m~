@@ -1,5 +1,4 @@
 function [vidMat, vidTimes, Aud] = FS2MAT(movfile)
-% This also interpolates all videos to 30Hz.
 audio_field = 'audio';
 FSfolder = '/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline';
 addpath(FSfolder);
@@ -12,15 +11,9 @@ end
 vidTimes = 0:1/30:params.video.times(end);
 Vid_end = vidTimes(end)+1/30;
 if (Aud.nrFrames/Aud.rate > Vid_end)
-    idx = find([0:(Aud.nrFrames-1)]/Aud.rate >= Vid_end);
+    idx = find([0:(Aud.nrFrames-1)]/Aud.rate > Vid_end);
     Aud.data(idx) = [];
-    Aud.nrFrames = numel(Aud.data);
-    Aud.TotalDuration = Aud.nrFrames/Aud.rate;
-end
-if (Aud.nrFrames/Aud.rate < Vid_end)
-    samples_to_add = round(Aud.rate / 30 * numel(vidTimes) - Aud.nrFrames);
-    Aud.data = [Aud.data; zeros(samples_to_add,1)];
-    Aud.nrFrames = numel(Aud.data);
+    Aud.nrFrames = Aud.nrFrames - numel(idx);
     Aud.TotalDuration = Aud.nrFrames/Aud.rate;
 end
  %(Aud.nrFrames/Aud.rate-1/30);

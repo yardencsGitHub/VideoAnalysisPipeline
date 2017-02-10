@@ -19,7 +19,7 @@ for fnum = 1:numel(mov_list)
         params.Aud.data(1:aud_idx) = [];
         params.Aud.TotalDuration = params.Aud.TotalDuration - delta_T;
         params.vidMat(:,:,1:maxidx) = [];
-        params.vidTimes(1:idx) = [];
+        params.vidTimes(idx) = [];
         params.vidTimes = params.vidTimes - params.vidTimes(1);
     end
     outname = [prefix mov_list{fnum}];
