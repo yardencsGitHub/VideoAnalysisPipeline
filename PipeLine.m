@@ -127,7 +127,8 @@ end
 temp_aud = filtfilt(Hd.Numerator,1,double(temp_aud));
 %% write the denoised movie to an AVI file 
 cd('/Users/yardenc/Documents/Experiments/Imaging/PracticeData/mat/reduced/cnmfe');
-writerObj = vision.VideoFileWriter('denoised.avi','AudioInputPort',true);
+writerObj = vision.VideoFileWriter('denoised.mp4','MPEG-4'); %'AudioInputPort',true);
+
 % total number of frames
 nFrames   = size(temp_vid,3);
 % assign FrameRate (by default it is 30)
@@ -212,7 +213,7 @@ end
 %% plot a sample of time labels
 idx = find((ResVidTimes>140.9) & (ResVidTimes<143));
 a_idx = 140.9:1/48000:143;
-figure; plot(a_idx,filtered(140.9*48000:143*48000));
+figure; plot(a_idx,Aud.data(140.9*48000:143*48000));
 
 hold on
 zer = zeros(1,numel(ResVidTimes)); zer(labels{1}) = 0.5;
@@ -228,5 +229,76 @@ plot(ResVidTimes(idx),zer(idx),'c');
 zer = zeros(1,numel(ResVidTimes)); zer(labels{6}) = 0.5;
 plot(ResVidTimes(idx),zer(idx),'k');
 
+%% Create djs metric for time separated labels
+%a = dec2bin(0:65535,16)'-48;
+ps = 1/6;
+[unique_words, locations] = words_in_batch(SpikeRaster);
+words_in_raster = dec2bin(unique_words,16)'-48;
+logprobs = [];
+for labl = 1:6
+    model = maxent.createModel(size(SpikeRaster,1),'ising');
+    model = maxent.trainModel(model, SpikeRaster(:,labels{labl}),'threshold',1);
+    logprobs = [logprobs; exp(maxent.getLogProbability(model,words_in_raster))];
+end
+
+pr = sum(ps*logprobs);
+psr = ps*bsxfun(@rdivide,logprobs,pr);
+djs = DjsMat2(psr', psr');
+%% Cluster
+n_clusters = 9;
+l = linkage(djs,'ward'); %'average'
+c = cluster(l,'maxclust', n_clusters);
+idxs = [];
+for clustn = 1:n_clusters
+    idxs = [idxs; find(c == clustn)];
+end
+figure; imagesc(djs(idxs,idxs));
+colormap(1-bone); colorbar;
+h=get(colorbar,'Label');
+set(h,'String','bits');
+xticks([1 150]); yticks([1 150]);
 %%
-model = maxent.createModel(size(SpikeRaster,1),'ising');
+ResVidTimes = [0:(size(SpikeRaster,2)-1)]/100;
+idx = find((ResVidTimes>14) & (ResVidTimes<143));
+a_idx = 14:1/48000:143;
+figure; plot(a_idx,Aud.data(14*48000:143*48000));
+
+hold on
+zer = zeros(1,numel(ResVidTimes)); zer(cell2mat(cellfun(@transpose,locations(c == 1),'UniformOutput',false))) = 0.1;
+plot(ResVidTimes(idx),zer(idx),'ro');
+zer = zeros(1,numel(ResVidTimes)); zer(cell2mat(cellfun(@transpose,locations(c == 2),'UniformOutput',false))) = 0.1;
+plot(ResVidTimes(idx),zer(idx),'go');
+zer = zeros(1,numel(ResVidTimes)); zer(cell2mat(cellfun(@transpose,locations(c == 3),'UniformOutput',false))) = 0.1;
+plot(ResVidTimes(idx),zer(idx),'bo');
+zer = zeros(1,numel(ResVidTimes)); zer(cell2mat(cellfun(@transpose,locations(c == 4),'UniformOutput',false))) = 0.1;
+plot(ResVidTimes(idx),zer(idx),'mo');
+zer = zeros(1,numel(ResVidTimes)); zer(cell2mat(cellfun(@transpose,locations(c == 7),'UniformOutput',false))) = 0.1;
+plot(ResVidTimes(idx),zer(idx),'co');
+zer = zeros(1,numel(ResVidTimes)); zer(cell2mat(cellfun(@transpose,locations(c == 6),'UniformOutput',false))) = 0.1;
+plot(ResVidTimes(idx),zer(idx),'ko');
+
+%% create templeate locked cluster location histograms
+ResVidTimes = [0:(size(SpikeRaster,2)-1)]/100;
+template_idx = cell(n_clusters,1);
+for i=1:85
+    idx = find((ResVidTimes>=starts(i)-0.05) & (ResVidTimes <= ends(i)+0.05));
+    for j = 1:n_clusters
+        idxs = intersect(idx,cell2mat(cellfun(@transpose,locations(c == j),'UniformOutput',false)));
+        template_idx(j) = {[template_idx{j} (idxs-idx(1))/(idx(end)-idx(1))]};
+    end
+end
+figure;
+for i=1:n_clusters
+    [n,x]=hist(template_idx{i},0:0.05:1); %0:5:75
+    plot(-0.05+x*0.7275,n,'LineWidth',2);
+    hold on
+end
+%%
+clusters_per_neuron = [];
+for roi = 1:16
+    temp = [];
+    for cl = 1:9
+        temp = [temp (sum(words_in_raster(roi,c == cl))>0)];
+    end
+    clusters_per_neuron = [clusters_per_neuron sum(temp)];
+end
