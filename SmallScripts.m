@@ -98,3 +98,5 @@ P.lam   = 0.1;  % firing rate = lam/dt
 P.sig   = 0.1;  % standard deviation of observation noise 
 
 [Nhat Phat] = fast_oopsi(F,V,P);
+%% check bunch of videos for cells via std
+cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15');
