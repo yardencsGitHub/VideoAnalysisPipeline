@@ -98,5 +98,13 @@ P.lam   = 0.1;  % firing rate = lam/dt
 P.sig   = 0.1;  % standard deviation of observation noise 
 
 [Nhat Phat] = fast_oopsi(F,V,P);
+<<<<<<< Updated upstream
 %% check bunch of videos for cells via std
 cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15');
+=======
+
+%% convert a bunch of *.mov files to check for existence of cells
+% 
+% MUST be ran in the videos' folder
+[FileName,PathName,FilterIndex] = uigetfile([pwd '/*.mov'],'MultiSelect','on');
+>>>>>>> Stashed changes
