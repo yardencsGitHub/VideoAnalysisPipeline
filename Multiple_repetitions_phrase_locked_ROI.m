@@ -14,7 +14,7 @@ RawDIR = '/Volumes/CanaryData/DATA/lrb853_15/RawData';
 FSfolder = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/FreedomScope/Analysis Pipeline';
 addpath(FSfolder);
 
-filename = 'lrb85315_1031_2017_03_24_07_29_14.mat';
+filename = 'lrb85315_1115_2017_03_27_06_59_53.mat';
 RawName = fullfile(RawDIR,['RawData_' filename]);
 load(RawName);
 
@@ -55,7 +55,7 @@ end
 
 %%
 figure;
-load cr;
+%load cr;
 for fnum = 1:numel(keys)
     if ismember(5,elements{fnum}.segType)
     
@@ -77,5 +77,48 @@ for fnum = 1:numel(keys)
             plot(dff(idx));
             hold on;
         end
+    end
+end
+%%
+prev_reg=[];
+prev_times = [];
+raster = [];
+for fnum = 1:numel(keys)
+    if ismember(303,elements{fnum}.segType)
+        display(fnum);
+        filename = fullfile(RawDIR,['RawData_' keys{fnum}(1:end-3) 'mat']);
+        try
+        load(filename,'vidMat','vidTimes');
+        [rows,columns,frames] = size(vidMat);
+        v_dt = mean(diff(vidTimes));
+        vid_shift = n_del_frames*v_dt;
+    
+        phrases = return_phrase_times(elements{fnum});
+        phrases.phraseFileStartTimes = phrases.phraseFileStartTimes - vid_shift;
+        phrases.phraseFileEndTimes = phrases.phraseFileEndTimes - vid_shift;
+        vid_temp = reshape(vidMat,rows*columns,frames);
+        roi_signal = sum(vid_temp(cr,:));
+        dff = (roi_signal - quantile(roi_signal,0.05))/quantile(roi_signal,0.05);
+        zdff = zscore(dff);
+        locs = find(phrases.phraseType == 303);
+        for loc=1:numel(locs)
+            idx = find((vidTimes >= phrases.phraseFileStartTimes(locs(loc))) & (vidTimes <= phrases.phraseFileEndTimes(locs(loc))));
+            plot(zdff(idx));
+            hold on;
+            if locs(loc) > 2       
+                idx_start = min(find(vidTimes >= phrases.phraseFileStartTimes(locs(loc))-10));
+                pad_start = zeros(1,ceil((10 - phrases.phraseFileStartTimes(locs(loc)) + vidTimes(idx_start))/v_dt));
+                idx_end = max(find(vidTimes <= phrases.phraseFileStartTimes(locs(loc))+10));
+                pad_end = zeros(1,ceil((10 + phrases.phraseFileStartTimes(locs(loc)) - vidTimes(idx_end))/v_dt));
+                raster = [raster; pad_start zdff(idx_start:idx_end) pad_end];
+                prev_reg = [prev_reg ; phrases.phraseType(locs(loc)-2:locs(loc)-1)'];
+                prev_times = [prev_times; [phrases.phraseFileStartTimes(locs(loc)-2) phrases.phraseFileEndTimes(locs(loc)-2) ...
+                    phrases.phraseFileStartTimes(locs(loc)-1) phrases.phraseFileEndTimes(locs(loc)-1)] - phrases.phraseFileStartTimes(locs(loc))];
+            end
+        end
+        catch em
+            display('*');
+        end
+        
     end
 end
