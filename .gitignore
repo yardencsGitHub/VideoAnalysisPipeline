@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 helpers/FS2MAT.m~
 
 temp/cr1.mat
@@ -14,3 +15,6 @@ Multiple_repetitions_phrase_locked_ROI.m~
 PipeLine.m~
 
 PipeLine.m~
+=======
+*.m~
+>>>>>>> origin/master
