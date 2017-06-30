@@ -1,3 +1,4 @@
+startfrom = 6427;
 DIR = pwd;
 fs=48000;
 Fst1 = 500;  % The max frequency (Hz) of the low stop band  
@@ -16,7 +17,15 @@ FILES = dir('*.mov');
 if ~exist(fullfile(pwd,'wav'),'dir')
     mkdir('wav');
 end
-for nmov = 1:numel(FILES)
+ord = [];
+for i = 1:numel(FILES)
+    tokens = regexp(FILES(i).name,'_','split');
+    ord = [ord; str2num(tokens{2})];
+end
+[locs,indx] = sort(ord);
+startloc = find(locs == startfrom);
+FILES = FILES(indx);
+for nmov = startloc:numel(FILES)
     [a_ts, a, v_ts, v] = extractmedia(FILES(nmov).name);
     audiowrite([DIR '/wav/' FILES(nmov).name(1:end-3) 'wav'],filtfilt(Hd.Numerator,1,double(a)),fs);
 end
