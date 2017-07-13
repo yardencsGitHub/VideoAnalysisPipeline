@@ -1,4 +1,4 @@
-%% create the list of wav files to convert to spectrograms
+%% create the list of mov files to convert to matlab matrices
 cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav');
 keysinfile = 'wavs_list';
 startfrom = 6427;

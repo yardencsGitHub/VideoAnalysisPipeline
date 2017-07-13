@@ -3,6 +3,7 @@ function [vidMat, vidTimes, Aud, dff2] = SingleMoviePipe_spectrogram_and_ROIs(fi
 filt_rad = 10; filt_sigma = 10; baseline_per=5; disp_band = [100 9e3];
 % Load a FreedomScope .mov file and arrange data into params.video and
 % params.audio
+    %FSfolder = '/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline';
     FSfolder = '/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline';
     addpath(FSfolder);
     [a_ts, a, v_ts, v] = extractmedia(filename);
@@ -80,7 +81,7 @@ filt_rad = 10; filt_sigma = 10; baseline_per=5; disp_band = [100 9e3];
     dff2 = (abs((W.^2-baseline.^2)))./baseline;
     h=fspecial('disk',2);
     dff2=imfilter(dff2,h); 
-    H = prctile(max(max(dff2(:,:,:))),60);
+    H = prctile(max(max(dff2(:,:,:))),80);
     L = 5;
     clim = [double(L) double(H)];
     NormIm = mat2gray(dff2, clim);    
@@ -89,17 +90,20 @@ filt_rad = 10; filt_sigma = 10; baseline_per=5; disp_band = [100 9e3];
     %figure; imshow(I);
     %caxis([0 0.2]);
 % Manual ROI extraction
-    [ROI]=FS_Image_ROI(uint8(I/max(I(:))*255)*1.5);
-% Create df/f traces aligned to spectrogram
+    [ROI fig_handle]=FS_Image_ROI(uint8(I/max(I(:))*255)*1.5,'save_dir','');
+    h = fspecial('disk',2);
+% Create df/f traces aligned to spectrogram 'len',16.7,'overlap',14
     [im,f,t] = zftftb_pretty_sonogram(Aud.data,Aud.rate,...
-    'len',16.7,'overlap',14,'zeropad',0,'norm_amp',1,'clipping',[-2 2]);
+    'len',35,'overlap',32,'zeropad',0,'norm_amp',1,'clipping',[-2 2]);
     startidx = max([find(f <= disp_band(1))]);
     stopidx = min([find(f >= disp_band(2))]);
     im = im(startidx:stopidx,:)*62;
     im = flipdim(im,1);
     figure;
     subplot(1+length(ROI.stats),1,1);
-    imshow(uint8(im),colormap(['hot(63)']));
+    imagesc(t,f,im); %,colormap(['hot(63)'])
+    colormap hot;
+    ylabel('Frequency(Hz)','FontSize',16);
     [rows,columns,frames] = size(vidMat);
     vid_temp = reshape(vidMat,rows*columns,frames);
     for roi_num = 1:length(ROI.stats)
@@ -110,6 +114,10 @@ filt_rad = 10; filt_sigma = 10; baseline_per=5; disp_band = [100 9e3];
         plot(vidTimes,dff);
         axis tight;
     end
+    ylabel('\DeltaF/F_0 (a.u.)','FontSize',16);
+    xlabel('Time (Sec)','FontSize',16);
+    set(gcf,'Position',[4 564 1259 420])
+    
        
     
 

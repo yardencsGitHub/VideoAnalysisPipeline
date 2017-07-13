@@ -1,20 +1,22 @@
 %% This script takes a list of FS videos, extracts and aligns video and audio data.
 % Results are saved to the Raw data folder (on the backup disk)
-% file names to process are in the varable 'keys' in the file
+% file names to process are in the variable 'keys' in the file
 % 'FS_movies_list.mat'
 FSfolder = '/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline';
 addpath(genpath(FSfolder));
 UtilsFolder = '/Users/yardenc/Documents/GitHub/small-utils';
 addpath(genpath(UtilsFolder));
 
-OutputFolder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/movs/RawData';
-
+OutputFolder = '/Volumes/home/Data/Imaging/lrb853_15/RawData';
+previos_annotation_file = 'lrb85315auto_annotation3';
+load(previos_annotation_file);
+old_keys = keys;
 keysinfile = 'FS_movies_list';
 DIR = pwd;
 load(keysinfile);
-
+keys = {old_keys{:} keys{:}};
 % parameters:
-ndel_frames = 5;
+ndel_frames = 0;
 
 for fnum = 1:numel(keys)
     display([num2str(fnum) '/' num2str(numel(keys)) ' files'])
@@ -23,7 +25,7 @@ for fnum = 1:numel(keys)
         display('corrupt date 04/19');
         continue;
     end
-    filename = keys{fnum};
+    filename = [keys{fnum}(1:end-3) 'mov'];
     [a_ts, a, v_ts, v] = extractmedia(filename);
     [video.width, video.height, video.channels] = size(v{1});
     video.times = v_ts;
@@ -63,7 +65,7 @@ for fnum = 1:numel(keys)
         Aud.nrFrames = numel(Aud.data);
         Aud.TotalDuration = Aud.nrFrames/Aud.rate;
     end
-    Aud.annotation = elements{fnum};
+    %Aud.annotation = elements{fnum};
     %(Aud.nrFrames/Aud.rate-1/30);
     [Y,n]=FS_Format(params.video.frames,1,1);
     [xx,yy,zz] = meshgrid(1:params.video.height,1:params.video.width,params.video.times);
@@ -76,10 +78,10 @@ for fnum = 1:numel(keys)
     Aud.nrFrames = Aud.nrFrames - startidx;
     Aud.data(1:startidx) = [];
     Aud.TotalDuration = Aud.TotalDuration - startidx / Aud.rate;
-    Aud.annotation.segAbsStartTimes = Aud.annotation.segAbsStartTimes - startidx/48000;
-    Aud.annotation.segFileStartTimes = Aud.annotation.segFileStartTimes - startidx/48000;
-    Aud.annotation.segFileEndTimes = Aud.annotation.segFileEndTimes - startidx/48000;
-    Aud.annotation.phrases = return_phrase_times(Aud.annotation);
+%     Aud.annotation.segAbsStartTimes = Aud.annotation.segAbsStartTimes - startidx/48000;
+%     Aud.annotation.segFileStartTimes = Aud.annotation.segFileStartTimes - startidx/48000;
+%     Aud.annotation.segFileEndTimes = Aud.annotation.segFileEndTimes - startidx/48000;
+%     Aud.annotation.phrases = return_phrase_times(Aud.annotation);
     vidMat(:,:,1:ndel_frames) = [];
     vidTimes(1:ndel_frames) = [];
     vidTimes = vidTimes - vidTimes(1);
