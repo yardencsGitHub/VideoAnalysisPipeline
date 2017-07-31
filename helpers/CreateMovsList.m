@@ -1,7 +1,8 @@
 %% create the list of mov files to convert to matlab matrices
+% Run on desktop 
 cd('/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/movs');
 keysinfile = 'FS_movies_list';
-startfrom = 6427;
+startfrom = 7983;
 FILES = dir('*.mov');
 ord = [];
 for i = 1:numel(FILES)

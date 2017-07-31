@@ -1,4 +1,4 @@
-startfrom = 6427;
+% startfrom = 6427;
 DIR = pwd;
 fs=48000;
 Fst1 = 500;  % The max frequency (Hz) of the low stop band  

@@ -1,7 +1,7 @@
 %% create the list of mov files to convert to matlab matrices
-cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav');
+%cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav');
 keysinfile = 'wavs_list';
-startfrom = 6427;
+%startfrom = 6427;
 FILES = dir('*.wav');
 ord = [];
 for i = 1:numel(FILES)

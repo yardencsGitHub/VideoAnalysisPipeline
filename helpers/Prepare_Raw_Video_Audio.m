@@ -6,15 +6,15 @@ FSfolder = '/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline';
 addpath(genpath(FSfolder));
 UtilsFolder = '/Users/yardenc/Documents/GitHub/small-utils';
 addpath(genpath(UtilsFolder));
-
 OutputFolder = '/Volumes/home/Data/Imaging/lrb853_15/RawData';
-previos_annotation_file = 'lrb85315auto_annotation3';
-load(previos_annotation_file);
-old_keys = keys;
+
+% previos_annotation_file = 'lrb85315auto_annotation3';
+% load(previos_annotation_file);
+% old_keys = keys;
 keysinfile = 'FS_movies_list';
-DIR = pwd;
+% DIR = pwd;
 load(keysinfile);
-keys = {old_keys{:} keys{:}};
+% keys = {old_keys{:} keys{:}};
 % parameters:
 ndel_frames = 0;
 

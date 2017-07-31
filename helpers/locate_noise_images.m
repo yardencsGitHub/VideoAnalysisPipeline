@@ -1,6 +1,6 @@
 %% go over a list of images and mark the noise ones
 DIR = pwd;
-startfrom = 6427;
+%startfrom = 6427;
 
 FILES = dir('*.gif');
 ord = [];

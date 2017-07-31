@@ -1,12 +1,12 @@
 %% move movies from storage folder, give them tweet names and check for duplicities
 % assumes FS names in source and Tweet names in target
 
-last_idx = 7982;
-last_date = '2017_06_29';
-last_time = '08_24_46';
-bird_name = 'lrb85315';
+% last_idx = 7982;
+% last_date = '2017_06_29';
+% last_time = '08_24_46';
+% bird_name = 'lrb85315';
+%DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
 
-DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
 DamagedMovs = dir([DamagedFolder ,'*.mov']);
 TweetDateTime = {};
 for fnum = 1: numel(DamagedMovs)
@@ -16,9 +16,9 @@ for fnum = 1: numel(DamagedMovs)
     end
 end
 %%
-SourceFolder = '/Volumes/CanaryData/DATA/lrb853_15/movs/';
+%SourceFolder = '/Volumes/CanaryData/DATA/lrb853_15/movs/';
 SourceMovs = dir([SourceFolder '*.mov']);
-TargetFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/';
+%TargetFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/';
 TargetMovs = dir([TargetFolder ,'*.mov']);
 TweetNums = [];
 %TweetDateTime = {};
