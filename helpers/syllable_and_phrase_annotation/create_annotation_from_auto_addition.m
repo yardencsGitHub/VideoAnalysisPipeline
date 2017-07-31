@@ -1,4 +1,7 @@
+<<<<<<< Updated upstream
 clear;
+=======
+>>>>>>> Stashed changes
 addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/TimOs'));
 DIR = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
 annDIR = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated';
@@ -88,7 +91,11 @@ for fnum = 1:num_files
                 params.elements{old_loc}.segAbsStartTimes = time + params.elements{old_loc}.segFileStartTimes/(24*60*60);
                 params.elements{old_loc}.segFileEndTimes = (syl_offset - 1) * dt;
 
+<<<<<<< Updated upstream
                 params.elements{old_loc}.segType = syllables(y)';
+=======
+                params.elements{old_loc}.segType = syllables(y);
+>>>>>>> Stashed changes
                 params.elements{old_loc}.segType(flags == 1) = -1;
             else
                 elements{cnt} = base_struct;
@@ -98,7 +105,11 @@ for fnum = 1:num_files
                 elements{cnt}.segAbsStartTimes = time + elements{cnt}.segFileStartTimes/(24*60*60);
                 elements{cnt}.segFileEndTimes = (syl_offset - 1) * dt;
 
+<<<<<<< Updated upstream
                 elements{cnt}.segType = syllables(y)';
+=======
+                elements{cnt}.segType = syllables(y);
+>>>>>>> Stashed changes
                 elements{cnt}.segType(flags == 1) = -1;
                 tempkeys{cnt} = [keys{fnum}(1:end-3) 'wav'];
                 cnt = cnt + 1;

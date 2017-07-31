@@ -13,14 +13,22 @@ n_syllables = numel(syllables);
 freq_min = 300; freq_max = 8000;
 colors = distinguishable_colors(n_syllables);
 %%
+<<<<<<< Updated upstream
 for fnum = 2669:2669 %1:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
+=======
+for fnum = 1:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
+>>>>>>> Stashed changes
     matfile = [keys{fnum}(1:end-3) 'mat'];
     load(matfile);
     
     h=figure('Visible','off','Position',[77          91        2215         420]);
     subplot(10,1,2:10);
+<<<<<<< Updated upstream
     imagesc(t,f(7:172),flipud(s(7:172,:)));
     %colormap(1-hot);
+=======
+    imagesc(t,f(7:172),s(7:172,:));
+>>>>>>> Stashed changes
     hold on;
     lbls = nan*zeros(size(s));
     phrases = return_phrase_times(elements{fnum});

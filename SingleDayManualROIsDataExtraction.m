@@ -3,6 +3,8 @@
 % from it. Then, it creates ROI annotation image, and calculates all ROI 
 % extracted dff data from that day to be saved in per-day folders.
 % it also creates folders for the images
+addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'));
+addpath(genpath('/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline'));
 clear dff;
 n_del_frames = 5; % # of frames to ignore in the beginning of wach file in calculations
 filt_rad = 50; filt_sigma = 45; % highpass filter 
