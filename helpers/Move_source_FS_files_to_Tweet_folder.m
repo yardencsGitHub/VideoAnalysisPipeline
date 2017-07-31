@@ -1,8 +1,9 @@
 %% move movies from storage folder, give them tweet names and check for duplicities
 % assumes FS names in source and Tweet names in target
-last_idx = 6426;
-last_date = '2017_05_30';
-last_time = '09_05_18';
+
+last_idx = 7982;
+last_date = '2017_06_29';
+last_time = '08_24_46';
 bird_name = 'lrb85315';
 
 DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
