@@ -7,7 +7,7 @@
 DIR = pwd;
 fs = 30;
 fmt = 'png';
-first_day = datenum('2017-02-20');
+% first_day = datenum('2017-02-20');
 FILES = dir(['*.' fmt]);
 if ~exist('max_movies','dir')
     mkdir('max_movies');
@@ -25,7 +25,8 @@ FILES = FILES(indx);
 
 if ~isempty(startloc)
     days = unique(dates);
-    for daynum = 1:numel(days)
+    startloc = min(find(days >= first_day));
+    for daynum = startloc:numel(days)
         locs = find(dates == days(daynum));
         tokens = regexp(FILES(locs(1)).name,'_','split');
         mov_fname = ['MaxProjMov_' tokens{1} '_' datestr(days(daynum),'yyyy_mm_dd') '.mp4'];

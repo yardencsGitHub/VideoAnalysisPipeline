@@ -9,6 +9,7 @@ DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lr
 % Folders on Data desktop:
 desktop_mov_folder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/movs';
 desktop_storage_folder = '/Volumes/home/Data/Imaging/lrb853_15/RawData';
+desktop_max_projections_dir = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/movs/MaxProj';
 
 % Parameters
 last_idx = 7982;
@@ -58,6 +59,34 @@ save FS_movies_list keys songfiles noisefiles;
 % Move list of movie files to process from the laptop (created in (4))
 % Run script "Prepare_Raw_Video_Audio"
 cd(desktop_mov_folder);
+OutputFolder = desktop_storage_folder; % '/Volumes/home/Data/Imaging/lrb853_15/RawData';
 Prepare_Raw_Video_Audio;
 
-%% 6. Annotate spectrograms 
+%% 6. Annotate spectrograms (in parallel to 5)
+% Copy the spectrogram matlab files from (3) to the desktop 
+% Set the folder names, parameters, and training checkpoint in the
+% annotation script and run.
+% Save results and copy to laptop
+% On laptop
+% Create annotation file or add newly annotated results to old one
+% (create_annotation_from_auto_addition) 
+% Set parameters accordingly
+% Needs fixing: create_annotation_from_auto_addition 
+
+%% 7. Clean annotation results (on laptop)
+% Move new annotation file to laptop_wav_folder
+% Use TweetVisionLite
+
+%% 8. Create Maximum projection images and movies (Desktop)
+% Create the maximum, background subtracted, projection for each song movie
+% (using the scipt CreateMaxProjections)
+% Then create daily max. proj movies using "CreateDailyMaxProjMovies"
+% Set parameters accordingly
+startfrom = last_idx+1;
+OutputDIR = desktop_max_projections_dir;
+DIR = desktop_storage_folder;
+CreateMaxProjections;
+cd(desktop_max_projections_dir);
+first_day = datenum('2017-06-30');
+CreateDailyMaxProjMovies;
+%% 9. Create manual ROI daily alignments (Desktop)
