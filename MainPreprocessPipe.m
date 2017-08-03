@@ -4,6 +4,8 @@ laptop_mov_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryDat
 laptop_wav_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
 laptop_gif_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/gif';
 laptop_storage_folder = '/Volumes/CanaryData/DATA/lrb853_15/movs/';
+laptop_annotated_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated';
+laptop_annotated_images_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
 DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
 
 % Folders on Data desktop:
@@ -71,12 +73,33 @@ Prepare_Raw_Video_Audio;
 % Create annotation file or add newly annotated results to old one
 % (create_annotation_from_auto_addition) 
 % Set parameters accordingly
+% Copy the file FS_movies_list.mat, created in(4) to the laptop_wav_folder.
 % Needs fixing: create_annotation_from_auto_addition 
-
+DIR = laptop_wav_folder; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
+annDIR = laptop_annotated_dir;
+auto_file = 'Results_Aug_01_2017.mat';
+old_annotation_file = 'lrb85315auto_annotation4';
+new_annotation_file = 'lrb85315auto_annotation5';
+template_file = 'lrb85315template.mat';
+corrections = 0; % a flag that indicates that we're going to reopen old annotations and replace some syllables' annotation
+syllables_to_reannotate = [300]; %  Theses syllables in the old files will trigger reannotation
+trill_syllables = [0:2 4 5 8 9 200 203 208 209 300:306 308 309];
+copyfile(fullfile(laptop_mov_folder,'FS_movies_list.mat'),fullfile(laptop_wav_folder,'FS_movies_list.mat'));
+create_annotation_from_auto_addition;
+keys = {params.keys{:} tempkeys{:}};
+elements = [params.elements elements];
+save(new_annotation_file,'elements','keys');
 %% 7. Clean annotation results (on laptop)
 % Move new annotation file to laptop_wav_folder
-% Use TweetVisionLite
-
+% Create phrase and spectrogram images using the script
+% "show_spec_and_phrases"
+% Use TweetVisionLite to fix mistakes
+targetdir = laptop_annotated_images_dir; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
+template_file = 'lrb85315template.mat';
+cd(laptop_wav_folder);
+load(template_file);
+syllables = [[templates.wavs.segType] -1 102 103];
+show_spec_and_phrases;
 %% 8. Create Maximum projection images and movies (Desktop)
 % Create the maximum, background subtracted, projection for each song movie
 % (using the scipt CreateMaxProjections)

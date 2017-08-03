@@ -1,15 +1,12 @@
-<<<<<<< Updated upstream
-clear;
-=======
->>>>>>> Stashed changes
+
 addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/TimOs'));
-DIR = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
-annDIR = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated';
-auto_file = 'test_results_07_10_2017.mat';
-old_annotation_file = 'lrb85315auto_annotation3';
-template_file = 'lrb85315template.mat';
-corrections = 1; % a flag that indicates that we're going to reopen old annotations and replace some syllables' annotation
-syllables_to_reannotate = [300]; %  Theses syllables in the old files will trigger reannotation
+% DIR = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
+% annDIR = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated';
+% auto_file = 'test_results_07_10_2017.mat';
+% old_annotation_file = 'lrb85315auto_annotation3';
+% template_file = 'lrb85315template.mat';
+% corrections = 1; % a flag that indicates that we're going to reopen old annotations and replace some syllables' annotation
+% syllables_to_reannotate = [300]; %  Theses syllables in the old files will trigger reannotation
 new_files_list_file = 'FS_movies_list'; % contains the variables keys, noisefiles and songfiles 
 
 cd(DIR);
@@ -21,7 +18,7 @@ old_songfiles_to_reannotate = [];
 for fnum = 1:numel(params.keys)
     tokens = regexp(params.keys{fnum},'_','split');
     old_songfiles = [old_songfiles; str2num(tokens{2})];
-    if any(ismember(unique(params.elements{fnum}.segType),syllables_to_reannotate))
+    if any(ismember(unique(params.elements{fnum}.segType),syllables_to_reannotate)) && (corrections == 1)
         old_songfiles_to_reannotate = [old_songfiles_to_reannotate; str2num(tokens{2})];
     end
 end
@@ -44,7 +41,7 @@ elements = {};
 tempkeys = {};
 dt = 1/3.692307692307692e+02;
 % specific for this bird
-trill_syllables = [0:2 4 5 8 9 200 203 208 209 300:306 308 309];
+% trill_syllables = [0:2 4 5 8 9 200 203 208 209 300:306 308 309];
 cnt = 1;
 for fnum = 1:num_files  
     temp = regexp(keys{fnum},'_','split');
@@ -91,11 +88,11 @@ for fnum = 1:num_files
                 params.elements{old_loc}.segAbsStartTimes = time + params.elements{old_loc}.segFileStartTimes/(24*60*60);
                 params.elements{old_loc}.segFileEndTimes = (syl_offset - 1) * dt;
 
-<<<<<<< Updated upstream
+
                 params.elements{old_loc}.segType = syllables(y)';
-=======
-                params.elements{old_loc}.segType = syllables(y);
->>>>>>> Stashed changes
+
+                %params.elements{old_loc}.segType = syllables(y);
+
                 params.elements{old_loc}.segType(flags == 1) = -1;
             else
                 elements{cnt} = base_struct;
@@ -105,11 +102,11 @@ for fnum = 1:num_files
                 elements{cnt}.segAbsStartTimes = time + elements{cnt}.segFileStartTimes/(24*60*60);
                 elements{cnt}.segFileEndTimes = (syl_offset - 1) * dt;
 
-<<<<<<< Updated upstream
+
                 elements{cnt}.segType = syllables(y)';
-=======
-                elements{cnt}.segType = syllables(y);
->>>>>>> Stashed changes
+
+               % elements{cnt}.segType = syllables(y);
+
                 elements{cnt}.segType(flags == 1) = -1;
                 tempkeys{cnt} = [keys{fnum}(1:end-3) 'wav'];
                 cnt = cnt + 1;
