@@ -113,3 +113,8 @@ cd(desktop_max_projections_dir);
 first_day = datenum('2017-06-30');
 CreateDailyMaxProjMovies;
 %% 9. Create manual ROI daily alignments (Desktop)
+% This is done by running the script "SingleDayManualROIsDataExtraction"
+
+
+
+
