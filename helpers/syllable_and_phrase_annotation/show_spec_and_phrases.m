@@ -3,6 +3,9 @@ addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitH
 addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'));
 addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'));
 % targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
+if ~exist(targetdir,'dir')
+    mkdir(targetdir);
+end
 % template_file = 'lrb85315template.mat';
 % cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav');
 cd(laptop_wav_folder);

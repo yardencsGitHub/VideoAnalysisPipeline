@@ -48,7 +48,7 @@ for fnum = 1:numel(SourceMovs)
             display(cnt);
         else
            targetname = [ConvertFilenameFS2Tweet(sourcename,bird_name,last_idx+1) '.mov'];
-           copyfile([SourceFolder sourcename],[TargetFolder targetname]);
+           copyfile(fullfile(SourceFolder,sourcename),fullfile(TargetFolder,targetname));
            last_idx = last_idx+1;
         end
     catch em
