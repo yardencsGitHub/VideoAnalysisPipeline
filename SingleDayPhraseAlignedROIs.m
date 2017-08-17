@@ -8,7 +8,9 @@ laptop_annotated_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/Canary
 laptop_annotated_images_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
 DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
 laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs';
-
+%% Folders on desktop
+addpath(genpath('/Users/yardenc/Documents/GitHub/small-utils'));
+laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs';
 %% Single bird
 time_padding = 2; %seconds around phrase
 bird_name = 'lrb85315';
@@ -17,7 +19,7 @@ load lrb85315template;
 syllables = [[templates.wavs.segType] -1 102 103];
 n_syllables = numel(syllables);
 freq_min = 300; freq_max = 8000;
-colors = distinguishable_colors(n_syllables);
+colors = distinguishable_colors(n_syllables,'w');
 load lrb85315auto_annotation5;
 ord = [];
 dates = [];
@@ -33,14 +35,14 @@ dates = dates(indx,:);
 
 
 %% Single day, selected ROIs
-Day = '2017_03_29';
-sylnum = 5;
-ROIs = [5 6]; %18; %[5 6 7]; %[3 9 13];%
+Day = '2017_03_19';
+sylnum = 207;
+ROIs = [9 15]; %18; %[5 6 7]; %[3 9 13];%
 
 warp = 0;
 locktoonset = 1;
-mulcnt = 3;
-opacity_factor = 0.8;
+mulcnt = 2;
+opacity_factor = 0.4;
 
 n_del_frames = 4;
 
@@ -54,8 +56,8 @@ cd([laptop_manualROI_folder '/ROIdata/' Day]);
 
 FILES = dir('ROIdata*.mat');
 FILES = {FILES.name};
-cnt = 0;
-
+hits = [];
+durations = [];
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
@@ -63,67 +65,103 @@ for fnum = 1:numel(FILES)
     phrases = return_phrase_times(elements{loc});
     if ismember(sylnum,phrases.phraseType)
         load(fname);
-        display(fname);
-        s = zscore(dff(:,n_del_frames+1:end)')';
-        t = vidTimes;   
+        %s = [s; zscore(dff(ROIs,n_del_frames+1:end)')];
+        
         phrase_locs = find(phrases.phraseType == sylnum);
         for phrase_loc = 1:numel(phrase_locs)
             phrasenum = phrase_locs(phrase_loc);
+             
             tonset = phrases.phraseFileStartTimes(phrasenum);
             toffset = phrases.phraseFileEndTimes(phrasenum);
-            for roi_n = 1:numel(ROIs)
+            hits = [hits; fnum phrasenum];
+            durations = [durations; toffset-tonset];
+        end
+    end
+end
+[durations,dur_idx] = sort(durations);
+hits = hits(dur_idx,:);
+
+
+
+cnt = 0;
+
+for cnt = 1:size(hits,1)
+    fnum = hits(cnt,1);
+    phrasenum = hits(cnt,2);
+    fname = FILES{fnum};
+    tokens = regexp(fname,'_','split');
+    loc = find(locs == str2num(tokens{3}));
+    phrases = return_phrase_times(elements{loc});
+    %if ismember(sylnum,phrases.phraseType)
+    load(fname);
+    display(fname);
+    s = zscore(dff(:,n_del_frames+1:end)')';
+    t = vidTimes;   
+    %phrase_locs = find(phrases.phraseType == sylnum);
+    %for phrase_loc = 1:numel(phrase_locs)
+    %    phrasenum = phrase_locs(phrase_loc);
+    tonset = phrases.phraseFileStartTimes(phrasenum);
+    toffset = phrases.phraseFileEndTimes(phrasenum);
+    for roi_n = 1:numel(ROIs)
 %                 if (phrasenum < numel(phrases.phraseFileStartTimes))
 %                     subplot(1,numel(ROIs)+1,roi_n);
 %                 else
 %                     subplot(1,numel(ROIs)+1,numel(ROIs)+1);
 %                 end
-                subplot(1,numel(ROIs),roi_n);
-                %axes(hs(roi_n));
-                signal = smooth(s(ROIs(roi_n),:),3);
-                timetag = (t(n_del_frames+1:end)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
-                %signal = (signal-quantile(signal,0.2))/max(signal);
-                for currphrase = 1:numel(phrases.phraseType)
-                    plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
-                         t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)), ...
-                         signal(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
-                         t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase))+cnt*mulcnt, ...
-                         'LineWidth',2,'Color',[colors(find(syllables == phrases.phraseType(currphrase)),:) opacity_factor]);
-                     hold on;
-                end
-                plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
-                         t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2), ...
-                         signal(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
-                         t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2)+cnt*mulcnt, ...
-                         'LineWidth',2,'Color',[0 0 0 0.4],'LineStyle','--');
-                %plot(,signal+cnt*0.0,'LineWidth',2,'Color',[0 0 0 0.3]);
-                cnt = cnt+1;
-                set(gca,'color','none');
-                box off;
-                if (roi_n == 1)
-                    title(['Phrase #' num2str(sylnum) ' locked Ca signals from ' datestr(Day,'yyyy-mm-dd')])
-                end
-                if (roi_n < numel(ROIs))
-                    set(gca,'XTick',[]);
-                else
-                    set(gca,'XTick',[0 1]*locktoonset+(1-locktoonset)*[-1 0]);
-                end
-                set(gca,'YTick',[]);
-                ylabel(['ROI# ' num2str(ROIs(roi_n))]);
-                if (roi_n == numel(ROIs))
-                    if warp == 1
-                        xlabel('Warped Time');
-                    else
-                        xlabel('Real Time');
-                    end
-                end
-                
-                set(gca,'FontSize',16);
-                axis tight;
-                xlim([-1 3]-(1-locktoonset));
+        subplot(1,numel(ROIs),roi_n);
+        %axes(hs(roi_n));
+        signal = smooth(s(ROIs(roi_n),:),3);
+        timetag = (t(n_del_frames+1:end)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
+        %signal = (signal-quantile(signal,0.2))/max(signal);
+        for currphrase = 1:numel(phrases.phraseType)
+            plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)), ...
+                 signal(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase))+cnt*mulcnt, ...
+                 'LineWidth',2,'Color',[colors(find(syllables == phrases.phraseType(currphrase)),:) opacity_factor]);
+             hold on;
+             if (currphrase < numel(phrases.phraseType))
+                 startidx = max(find(t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)));
+                 stopidx = min(find(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase+1)));
+                 plot(timetag(startidx:stopidx), ...
+                 signal(startidx:stopidx)+cnt*mulcnt, ...
+                 'LineWidth',2,'Color',[0 0 0 0.4],'LineStyle','-');
+             end
+        end
+        plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2), ...
+                 signal(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2)+cnt*mulcnt, ...
+                 'LineWidth',2,'Color',[0 0 0 0.4],'LineStyle','--');
+        %plot(,signal+cnt*0.0,'LineWidth',2,'Color',[0 0 0 0.3]);
+        cnt = cnt+1;
+        set(gca,'color','none');
+        %box off;
+        if (roi_n == 1)
+            title(['Phrase #' num2str(sylnum) ' locked Ca signals from ' datestr(Day,'yyyy-mm-dd')])
+        end
+        if (roi_n < numel(ROIs))
+            set(gca,'XTick',[]);
+        else
+            set(gca,'XTick',[0 1]*locktoonset+(1-locktoonset)*[-1 0]);
+        end
+        set(gca,'YTick',[]);
+        ylabel(['ROI# ' num2str(ROIs(roi_n))]);
+        if (roi_n == numel(ROIs))
+            if warp == 1
+                xlabel('Warped Time');
+            else
+                xlabel('Real Time');
             end
         end
-        
+
+        set(gca,'FontSize',16);
+        axis tight;
+        xlim([-1 3]-(1-locktoonset));
     end
+    %end
+        
+    %end
 end
 
 

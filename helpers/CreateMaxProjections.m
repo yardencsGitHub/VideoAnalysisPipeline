@@ -1,4 +1,7 @@
 %%
+if ~exist('MaxProj','dir')
+    mkdir('MaxProj');
+end
 map = [0:0.01:1]'*ones(1,3);
 filt_rad = 50; filt_sigma = 45; n_del_frames = 0;
 h = fspecial('gaussian',filt_rad,filt_sigma);

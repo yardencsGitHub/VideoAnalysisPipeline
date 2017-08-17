@@ -3,6 +3,21 @@
 % from it. Then, it creates ROI annotation image, and calculates all ROI 
 % extracted dff data from that day to be saved in per-day folders.
 % it also creates folders for the images
+
+last_idx = 0;
+init_idx = 0;
+last_date = '2017_02_29';
+last_time = '00_00_00';
+bird_name = 'lbr3022';
+bird_folder_name = 'lbr3022';
+
+% Folders on Data desktop:
+desktop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs'];
+desktop_storage_folder = ['/Volumes/home/Data/Imaging/' bird_folder_name '/RawData'];
+desktop_max_projections_dir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs/MaxProj'];
+
+
+
 addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'));
 addpath(genpath('/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline'));
 clear dff;
@@ -10,9 +25,9 @@ n_del_frames = 5; % # of frames to ignore in the beginning of wach file in calcu
 filt_rad = 50; filt_sigma = 45; % highpass filter 
 h = fspecial('gaussian',filt_rad,filt_sigma);
 date_loc = [13 4]; % location of date string in file name w.r.t. end
-MaxMaxProjDir = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/movs/MaxProj/max_images';
-RawDataDir = '/Volumes/home/Data/Imaging/lrb853_15/RawData';
-ManualMaxProjROIsDir = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs';
+MaxMaxProjDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_name '/movs/MaxProj/max_images'];
+RawDataDir = ['/Volumes/home/Data/Imaging/' bird_name '/RawData'];
+ManualMaxProjROIsDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_name '/ManualROIs'];
 % create folders
 if ~exist(ManualMaxProjROIsDir,'dir')
     mkdir(ManualMaxProjROIsDir);

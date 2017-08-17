@@ -8,7 +8,9 @@ laptop_annotated_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/Canary
 laptop_annotated_images_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
 DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
 laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs';
-
+%% Folders on desktop:
+addpath(genpath('/Users/yardenc/Documents/GitHub/small-utils'));
+laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs';
 %% Single bird
 time_padding = 2; %seconds around phrase
 bird_name = 'lrb85315';
@@ -33,9 +35,9 @@ dates = dates(indx,:);
 
 
 %% Single day, selected ROIs
-Day = '2017_07_06';
-sylnum = 8;
-ROIs = [16]; %18; %[5 6 7]; %[3 9 13];%
+Day = '2017_04_18';
+sylnum = 9;
+ROIs = [12]; %18; %[5 6 7]; %[3 9 13];%
 
 warp = 1;
 locktoonset = 1;
@@ -116,7 +118,7 @@ for cnt = 1:size(hits,1)
 %         t_temp = interp1(timetag,t_temp,timetag(1):1/durfactor/1000:timetag(end)+1/30);
 %         timetag = interp1(timetag,timetag,timetag(1):1/durfactor/1000:timetag(end)+1/30);
 %     end
-    idxmap = [1:numel(timetag)] - find(abs(timetag) == min(abs(timetag)))+2100+round((1-locktoonset)*max(durations)*(1000*(1-warp)+warp*durfactor));
+    idxmap = [1:numel(timetag)] - min(find(abs(timetag) == min(abs(timetag))))+2100+round((1-locktoonset)*max(durations)*(1000*(1-warp)+warp*durfactor));
     for currphrase = 1:numel(phrases.phraseType)
         t_on = (phrases.phraseFileStartTimes(currphrase)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
         t_off = (phrases.phraseFileEndTimes(currphrase)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
