@@ -1,26 +1,49 @@
+%%
+Day = '2017_06_28';
+sylnum = 200;
+ROIs = 34; %[304 -->23]; [200 --> 12] %18; %[5 6 7]; %[3 9 13];%
+g = 0.9;
+warp = 0;
+locktoonset = 0;
+mulcnt = 2;
+spikes = 2;
+edges = [0 0];
+
+
+opacity_factor = 1;
+
+n_del_frames = 5;
+%%
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'));
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'));
+bird_name = 'lrb85315';
+bird_folder_name = 'lrb853_15';
+template_file = 'lrb85315template';
+annotation_file = 'lrb85315auto_annotation5';
+CNMFEfolder = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/CNMF_E';
 %% Folders that contain data
 % Folders on laptop:
-laptop_mov_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs';
-laptop_wav_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
-laptop_gif_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/gif';
-laptop_storage_folder = '/Volumes/CanaryData/DATA/lrb853_15/movs/';
-laptop_annotated_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated';
-laptop_annotated_images_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
-DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
-laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs';
+laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
+laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
+laptop_gif_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav/gif'];
+laptop_storage_folder = ['/Volumes/CanaryData/DATA/lrb853_15/movs/'];
+laptop_annotated_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav/annotated'];
+laptop_annotated_images_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav/annotated/images'];
+DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/too_large_or_damaged/'];
+laptop_manualROI_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/ManualROIs'];
 %% Folders on desktop
 addpath(genpath('/Users/yardenc/Documents/GitHub/small-utils'));
+addpath(genpath(CNMFEfolder));
 %laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs';
 %% Single bird
 time_padding = 2; %seconds around phrase
-bird_name = 'lrb85315';
 cd (laptop_manualROI_folder);
-load lrb85315template;
+load(template_file);
 syllables = [[templates.wavs.segType] -1 102 103];
 n_syllables = numel(syllables);
 freq_min = 300; freq_max = 8000;
 colors = distinguishable_colors(n_syllables,'w');
-load lrb85315auto_annotation5;
+load(annotation_file);
 ord = [];
 dates = [];
 for i = 1:numel(keys)
@@ -35,16 +58,7 @@ dates = dates(indx,:);
 
 
 %% Single day, selected ROIs
-Day = '2017_06_28';
-sylnum = 305;
-ROIs = [9 15]; %18; %[5 6 7]; %[3 9 13];%
 
-warp = 0;
-locktoonset = 1;
-mulcnt = 2;
-opacity_factor = 0.4;
-
-n_del_frames = 4;
 
 h=figure('Visible','on','Position',[77          91        640         600]);
 % for i = 1:numel(ROIs)
@@ -84,7 +98,9 @@ hits = hits(dur_idx,:);
 
 
 cnt = 0;
-
+sig_integrals = [];
+sig_std_in = [];
+sig_std_out = [];
 for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
     phrasenum = hits(cnt,2);
@@ -94,8 +110,12 @@ for cnt = 1:size(hits,1)
     phrases = return_phrase_times(elements{loc});
     %if ismember(sylnum,phrases.phraseType)
     load(fname);
-    display(fname);
-    s = zscore(dff(:,n_del_frames+1:end)')';
+    display([num2str(cnt) ' ' fname]);
+    if spikes ==2
+        s = zscore(dff(:,n_del_frames+1:end)')';
+    end
+    dff = dff(:,n_del_frames+1:end);
+    y  = dff - ones(size(dff,1),1)*mean(dff);
     t = vidTimes;   
     %phrase_locs = find(phrases.phraseType == sylnum);
     %for phrase_loc = 1:numel(phrase_locs)
@@ -110,28 +130,56 @@ for cnt = 1:size(hits,1)
 %                 end
         subplot(1,numel(ROIs),roi_n);
         %axes(hs(roi_n));
-        signal = smooth(s(ROIs(roi_n),:),3);
+        if spikes < 2
+            [c, s, options] = deconvolveCa(y(ROIs(roi_n),:),'ar1',g,'method','constrained-foopsi');
+        end
+        switch spikes
+            case 1
+                signal = s;
+            case 0
+              signal = c; %smooth(s(ROIs(roi_n),:),3);  
+            otherwise
+                signal = smooth(s(ROIs(roi_n),:),3);
+        end
+        sig_integrals = [sig_integrals; ...
+            sum(signal((t(n_del_frames+1:end) >= tonset) & ...
+            (t(n_del_frames+1:end) <= toffset)))];
+        sig_std_in = [sig_std_in; ...
+            quantile(signal((t(n_del_frames+1:end) >= (tonset-edges(1))) & ...
+            (t(n_del_frames+1:end) <= (toffset+edges(2)))),0.9) - ...
+            quantile(signal((t(n_del_frames+1:end) >= (tonset-edges(1))) & ...
+            (t(n_del_frames+1:end) <= (toffset+edges(2)))),0.1)];
+        sig_std_out = [sig_std_out; ...
+            quantile(signal((t(n_del_frames+1:end) <= (tonset-edges(1))) | ...
+            (t(n_del_frames+1:end) >= (toffset+edges(2)))),0.9) - ...
+            quantile(signal((t(n_del_frames+1:end) <= (tonset-edges(1))) | ...
+            (t(n_del_frames+1:end) >= (toffset+edges(2)))),0.1)];
         timetag = (t(n_del_frames+1:end)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
         %signal = (signal-quantile(signal,0.2))/max(signal);
         for currphrase = 1:numel(phrases.phraseType)
-            plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
+            plot3(timetag(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
                  t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)), ...
+                 cnt*mulcnt*ones(1,sum(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase))), ...
                  signal(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
-                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase))+cnt*mulcnt, ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase))+0, ...
                  'LineWidth',2,'Color',[colors(find(syllables == phrases.phraseType(currphrase)),:) opacity_factor]);
              hold on;
              if (currphrase < numel(phrases.phraseType))
                  startidx = max(find(t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)));
                  stopidx = min(find(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase+1)));
-                 plot(timetag(startidx:stopidx), ...
-                 signal(startidx:stopidx)+cnt*mulcnt, ...
+                 plot3(timetag(startidx:stopidx), ...
+                 cnt*mulcnt*ones(1,numel(startidx:stopidx)), ...
+                 signal(startidx:stopidx)+0, ...
                  'LineWidth',2,'Color',[0 0 0 0.4],'LineStyle','-');
              end
         end
-        plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
+        plot3(timetag(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
                  t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2), ...
+                 cnt*mulcnt*ones(1,sum(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2)), ...
                  signal(t(n_del_frames+1:end) >= phrases.phraseFileEndTimes(currphrase) & ...
-                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2)+cnt*mulcnt, ...
+                 t(n_del_frames+1:end) <= phrases.phraseFileEndTimes(currphrase)+2)+0, ...
                  'LineWidth',2,'Color',[0 0 0 0.4],'LineStyle','--');
         %plot(,signal+cnt*0.0,'LineWidth',2,'Color',[0 0 0 0.3]);
         cnt = cnt+1;

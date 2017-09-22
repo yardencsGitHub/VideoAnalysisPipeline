@@ -4,8 +4,8 @@ last_idx = 0;
 init_idx = 0;
 last_date = '2017_02_29';
 last_time = '00_00_00';
-bird_name = 'lbr3022';
-bird_folder_name = 'lbr3022';
+bird_name = 'lrb85315';
+bird_folder_name = 'lrb853_15';
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -79,6 +79,9 @@ OutputFolder = desktop_storage_folder; % '/Volumes/home/Data/Imaging/lrb853_15/R
 Prepare_Raw_Video_Audio;
 
 %% 6. Annotate spectrograms (in parallel to 5)
+% Create annotated files for training using TweetVision
+% run add_annotation_to_mat(DIR,annotation_file,template_file) in the
+% correct wav folder 
 % Copy the spectrogram matlab files from (3) to the desktop 
 % Set the folder names, parameters, and training checkpoint in the
 % annotation script and run.
@@ -91,28 +94,34 @@ Prepare_Raw_Video_Audio;
 % Needs fixing: create_annotation_from_auto_addition 
 DIR = laptop_wav_folder; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
 annDIR = laptop_annotated_dir;
-auto_file = 'Results_Aug_01_2017.mat';
-old_annotation_file = 'lrb85315auto_annotation4';
-new_annotation_file = 'lrb85315auto_annotation5';
-template_file = 'lrb85315template.mat';
+auto_file = 'Results_Aug_18_2017.mat';
+old_annotation_file = 'lbr3022_annotation3';
+new_annotation_file = 'lrb85315auto_annotation5'; %'lbr3022auto_annotation3';
+template_file = 'lbr3022_template.mat';
 corrections = 0; % a flag that indicates that we're going to reopen old annotations and replace some syllables' annotation
-syllables_to_reannotate = [300]; %  Theses syllables in the old files will trigger reannotation
-trill_syllables = [0:2 4 5 8 9 200 203 208 209 300:306 308 309];
+isnew = 1; % a flag that indicates if this is the first time we annotate files from this bird
+syllables_to_reannotate = []; %  Theses syllables in the old files will trigger reannotation
+trill_syllables = [0:4 8 9 204 206 207 300 301];
 copyfile(fullfile(laptop_mov_folder,'FS_movies_list.mat'),fullfile(laptop_wav_folder,'FS_movies_list.mat'));
 create_annotation_from_auto_addition;
-keys = {params.keys{:} tempkeys{:}};
-elements = [params.elements elements];
-save(new_annotation_file,'elements','keys');
+if ~isnew
+    keys = {params.keys{:} tempkeys{:}};
+    elements = [params.elements elements];
+else
+    keys = tempkeys;
+end
+%save(new_annotation_file,'elements','keys');
 %% 7. Clean annotation results (on laptop)
 % Move new annotation file to laptop_wav_folder
 % Create phrase and spectrogram images using the script
 % "show_spec_and_phrases"
 % Use TweetVisionLite to fix mistakes
+startfrom = init_idx+1;
 targetdir = laptop_annotated_images_dir; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
-template_file = 'lrb85315template.mat';
+template_file = 'lrb85315template'; %'lbr3022_template.mat';
 cd(laptop_wav_folder);
 load(template_file);
-syllables = [[templates.wavs.segType] -1 102 103];
+syllables = [[templates.wavs.segType] -1];
 show_spec_and_phrases;
 %% 8. Create Maximum projection images and movies (Desktop)
 % Create the maximum, background subtracted, projection for each song movie

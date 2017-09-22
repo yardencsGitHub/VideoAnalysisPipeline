@@ -40,7 +40,8 @@ for fnum = startloc:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
     h=figure('Visible','off','Position',[77          91        2215         420]);
     subplot(10,1,2:10);
 
-    imagesc(t,f(7:172),flipud(s(7:172,:)));
+    imagesc(t,f(7:172),(s(7:172,:)));
+    set(gca,'YDir','normal');
     %colormap(1-hot);
 
     %imagesc(t,f(7:172),s(7:172,:));
@@ -75,6 +76,7 @@ for fnum = startloc:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
     tokens = regexp(matfile,'_','split');
     title(['bird: ' tokens{1} ', file: ' tokens{2}]);
     saveas(h,fullfile(targetdir,[keys{fnum}(1:end-3) 'png']));
+    
     hgclose(h);
     display(fnum/numel(keys));
     display(matfile)

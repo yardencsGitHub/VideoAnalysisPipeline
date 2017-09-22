@@ -8,9 +8,11 @@ laptop_annotated_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/Canary
 laptop_annotated_images_dir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
 DamagedFolder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/too_large_or_damaged/';
 laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs';
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'));
 %% Folders on desktop:
-addpath(genpath('/Users/yardenc/Documents/GitHub/small-utils'));
-laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs';
+%addpath(genpath('/Users/yardenc/Documents/GitHub/small-utils'));
+
+%laptop_manualROI_folder = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs';
 %% Single bird
 time_padding = 2; %seconds around phrase
 bird_name = 'lrb85315';
@@ -35,16 +37,16 @@ dates = dates(indx,:);
 
 
 %% Single day, selected ROIs
-Day = '2017_04_18';
-sylnum = 9;
-ROIs = [12]; %18; %[5 6 7]; %[3 9 13];%
-
-warp = 1;
+Day = '2017_06_28';
+sylnum = 5;
+ROIs = [44]; %18; %[5 6 7]; %[3 9 13];%
+zscoring_type = 1;
+warp = 0;
 locktoonset = 1;
 bg_lim = 0.5;
 
-n_del_frames = 4;
-
+n_del_frames = 6;
+hvc_offset = 0.035;
 h=figure('Visible','on','Position',[77          91        640         600]);
 % for i = 1:numel(ROIs)
 %     h=figure('Visible','on','Position',[77          91        2215         420]);
@@ -86,8 +88,10 @@ hits = hits(dur_idx,:);
 
 if warp == 0
     I = zeros(size(hits,1),ceil(max(durations)*1000+4200),3);
+    I1 = zeros(size(hits,1),ceil(max(durations)*1000+4200));
 else
     I = zeros(size(hits,1),ceil(max(durations)/min(durations)*1000+4200),3);
+    I1 = zeros(size(hits,1),ceil(max(durations)/min(durations)*1000+4200));
 end
 for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
@@ -98,8 +102,16 @@ for cnt = 1:size(hits,1)
     phrases = return_phrase_times(elements{loc});
     load(fname);
     display(fname);
-    s = zscore(dff(:,n_del_frames+1:end)')';
-    t = vidTimes;  
+    dff = dff(:,n_del_frames+1:end);
+    y  = dff - ones(size(dff,1),1)*smooth(mean(dff),100)';
+    if zscoring_type == 1
+        s = reshape(zscore(y(:)),size(y));
+    else
+        s = zscore(y')';
+    end
+    t = vidTimes+hvc_offset;
+    %
+    %t = vidTimes;  
     tonset = phrases.phraseFileStartTimes(phrasenum);
     toffset = phrases.phraseFileEndTimes(phrasenum);
     signal = smooth(s(ROIs,:),3);
@@ -119,6 +131,14 @@ for cnt = 1:size(hits,1)
 %         timetag = interp1(timetag,timetag,timetag(1):1/durfactor/1000:timetag(end)+1/30);
 %     end
     idxmap = [1:numel(timetag)] - min(find(abs(timetag) == min(abs(timetag))))+2100+round((1-locktoonset)*max(durations)*(1000*(1-warp)+warp*durfactor));
+    
+    
+    t_on = (phrases.phraseFileStartTimes(1)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
+    t_off = (phrases.phraseFileEndTimes(end)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
+    idxs = find((timetag >= t_on) & (timetag <= t_off) & ...
+            (timetag >= -2*locktoonset  + (-max(durations)*(1-warp)-2-warp)*(1-locktoonset)) & ...
+            (timetag <= 2*(1-locktoonset)+locktoonset*(2+max(durations)*(1-warp)+warp)));
+    I1(cnt,idxmap(idxs)) = signal(idxs);
     for currphrase = 1:numel(phrases.phraseType)
         t_on = (phrases.phraseFileStartTimes(currphrase)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
         t_off = (phrases.phraseFileEndTimes(currphrase)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
@@ -130,6 +150,7 @@ for cnt = 1:size(hits,1)
            % hold on;
             I(cnt,idxmap(idxs),:) = signal(idxs)'*colors(find(syllables == phrases.phraseType(currphrase)),:);% + ...
                 %(1-signal(idxs)')*(1-colors(find(syllables == phrases.phraseType(currphrase)),:));
+            
         end
     end
     t_on = (phrases.phraseFileEndTimes(currphrase)-tonset*locktoonset-(1-locktoonset)*toffset)/((toffset-tonset)*warp+1-warp);
@@ -142,6 +163,7 @@ for cnt = 1:size(hits,1)
         %hold on;
         I(cnt,idxmap(idxs),:) = signal(idxs)'*[0.5 0.5 0.5];% + ...
             %(1-signal(idxs)')*(1-colors(find(syllables == phrases.phraseType(currphrase)),:));
+        I1(cnt,idxmap(idxs)) = signal(idxs);
     end
 end
 
@@ -164,6 +186,16 @@ ylabel(['ROI# ' num2str(ROIs)]);
 
 
 set(gca,'FontSize',16);
+%%
+h = figure;
+mn = mean(I1);
+se = std(I1)/sqrt(size(I1,1));
+xidx = -2.1-max(durations)*(1-locktoonset):1/1000:2.1+max(durations)*(locktoonset);
+fill([xidx fliplr(xidx)],[mn+se fliplr(mn-se)],[1 0 0],'FaceAlpha',0.5);
+hold on;
+plot(-2.1-max(durations)*(1-locktoonset):1/1000:2.1+max(durations)*(locktoonset),mean(I1),'b','LineWidth',2);
+
+
 
 
 %         plot(timetag(t(n_del_frames+1:end) >= phrases.phraseFileStartTimes(currphrase) & ...
