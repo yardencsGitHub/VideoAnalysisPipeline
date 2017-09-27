@@ -2,11 +2,11 @@ function [ax,r,p] = PhraseLockedSingleDayManualROIs_function(ax,Day,sylnum,ROIs,
 %[h,r,p] = PhraseLockedSingleDayManualROIs_function('2017_06_28',301,51,1,2);
 %%
 thr = 0.02;
-zscoring_type = 1;
+zscoring_type = 0;
 delete_frames = 1;
 n_del_frames = 6;
  
-hvc_offset = 0.035;
+hvc_offset = 0.04;
     %Day = '2017_06_28';
     %sylnum = 200;
     %ROIs = 34; %[304 -->23]; [200 --> 12] %18; %[5 6 7]; %[3 9 13];%
@@ -157,7 +157,7 @@ hvc_offset = 0.035;
                     %[c, s, options] = deconvolveCa(detrend(y(roi_n,:)),'ar1',g,'method','constrained-foopsi');
                     %[c, s, options] =
                     %deconvolveCa((y(ROIs(roi_n),:)),'ar2','method','thresholded','optimize_b',1); [1.3 -0.422]
-                    [c, s, options] = deconvolveCa(y(ROIs(roi_n),:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin','optimize_pars');
+                    [c, s, options] = deconvolveCa(y(ROIs(roi_n),:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin');%,'optimize_pars');
                 catch em
                     [c, s, options] = deconvolveCa((y(ROIs(roi_n),:)),'ar2','method','foopsi','optimize_b',1);
                     %[c, s, options] = deconvolveCa(detrend(y(roi_n,:)),'ar1',g,'method','foopsi');

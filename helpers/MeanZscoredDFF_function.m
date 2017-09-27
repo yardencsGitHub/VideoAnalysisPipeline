@@ -3,7 +3,7 @@ function [xidx,mn,se,mn2,se2] = MeanZscoredDFF_function(Day,sylnum,ROIs,locktoon
     %zscoring_type = 0;
     delete_frames = 1;
     n_del_frames = 6;
-    hvc_offset = 0.035;
+    hvc_offset = 0.04;
 %% Folders that contain data
     % Folders on laptop:
     bird_name = 'lrb85315';

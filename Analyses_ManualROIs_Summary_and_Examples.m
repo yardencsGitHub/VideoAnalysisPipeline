@@ -89,7 +89,7 @@ end
 % (so it is basically the rate ..)
 %sig_type = 1;
 zscoring_type = 1;
-for Day_num = 1:71
+for Day_num = 21:71
     cd(laptop_manualROI_analyses_folder);
     if ~exist(unique_dates(Day_num,:),'dir')
         mkdir(unique_dates(Day_num,:));
@@ -101,98 +101,101 @@ for Day_num = 1:71
         [spikes_in_phraseType, indx] = sort(spikes_in_phraseType,'descend');
         cumm_rate_in_phraseType = cumsum(spikes_in_phraseType)/sum(spikes_in_phraseType);
         phrase_specificity = [phrase_specificity; min(find(cumm_rate_in_phraseType >= specificity_thr))];
-        if (phrase_specificity(end) <= 6  && ~isnan(cumm_rate_in_phraseType(1)))
-            for FR_ord = 1:phrase_specificity(end)            
-                %spikes_in_phraseType = cellfun(@numel,{per_syl_num(roi_n,:).data})./(num_phraseType+1e-6)';
-                sylnum = syllables(indx(FR_ord)); %syllables(min(find(spikes_in_phraseType == max(spikes_in_phraseType))));
-                hf = figure('Visible','off'); 
+        try 
+            if (phrase_specificity(end) <= 6  && ~isnan(cumm_rate_in_phraseType(1)))
+                for FR_ord = 1:phrase_specificity(end)            
+                    %spikes_in_phraseType = cellfun(@numel,{per_syl_num(roi_n,:).data})./(num_phraseType+1e-6)';
+                    sylnum = syllables(indx(FR_ord)); %syllables(min(find(spikes_in_phraseType == max(spikes_in_phraseType))));
+                    hf = figure('Visible','off'); 
 
-                h1 = subplot(3,4,[1 2]);
-                [h,r,p] = PhraseLockedSingleDayManualROIs_function(h1,unique_dates(Day_num,:),sylnum,roi_n,1,2,0); %set(h,'Visible','on');      
-                xlim([-1 3]);
-                set(gca,'CameraPosition',[-11.5361 -174.7864 25.2058]);
-                set(gca,'FontSize',16);
+                    h1 = subplot(3,4,[1 2]);
+                    [h,r,p] = PhraseLockedSingleDayManualROIs_function(h1,unique_dates(Day_num,:),sylnum,roi_n,1,2,0); %set(h,'Visible','on');      
+                    xlim([-1 3]);
+                    set(gca,'CameraPosition',[-11.5361 -174.7864 25.2058]);
+                    set(gca,'FontSize',16);
 
-                h2 = subplot(3,4,[3 4]);
-                [h,r,p] = PhraseLockedSingleDayManualROIs_function(h2,unique_dates(Day_num,:),sylnum,roi_n,0,0,0); %set(h,'Visible','on');      
-                xlim([-2 2]);
-                set(gca,'CameraPosition',[-11.5361 -174.7864 25.2058]);
-                set(gca,'FontSize',16);
-                title(['r,p=' num2str(r) ',' num2str(p)]);
+                    h2 = subplot(3,4,[3 4]);
+                    [h,r,p] = PhraseLockedSingleDayManualROIs_function(h2,unique_dates(Day_num,:),sylnum,roi_n,0,0,0); %set(h,'Visible','on');      
+                    xlim([-2 2]);
+                    set(gca,'CameraPosition',[-11.5361 -174.7864 25.2058]);
+                    set(gca,'FontSize',16);
+                    title(['r,p=' num2str(r) ',' num2str(p)]);
 
-                h3 = subplot(3,4,[5 6]);
-                [h,r,p] = PhraseLockedSingleDayManualROIs_function(h3,unique_dates(Day_num,:),sylnum,roi_n,1,1,1); %set(h,'Visible','on');      
-                xlim([-1 2]);
-                set(gca,'CameraPosition',[-11.5361 -174.7864 25.2058]);
-                set(gca,'FontSize',16);
-                title(['r,p=' num2str(r) ',' num2str(p)]);
+                    h3 = subplot(3,4,[5 6]);
+                    [h,r,p] = PhraseLockedSingleDayManualROIs_function(h3,unique_dates(Day_num,:),sylnum,roi_n,1,1,1); %set(h,'Visible','on');      
+                    xlim([-1 2]);
+                    set(gca,'CameraPosition',[-11.5361 -174.7864 25.2058]);
+                    set(gca,'FontSize',16);
+                    title(['r,p=' num2str(r) ',' num2str(p)]);
 
-                subplot(3,4,7); polarhistogram(angle(per_syl_phases(roi_n,indx(FR_ord)).data),'BinWidth',pi/18);
-                set(gca,'ThetaTickLabel',[]);
-                set(gca,'FontSize',16);
-                subplot(3,4,8);
-                display([sylnum roi_n])
-                [mn,se] = MeanZscoredDFF_angular_function(unique_dates(Day_num,:),sylnum,roi_n,zscoring_type);
-                polarplot(0:2*pi/1000:2*pi-2*pi/1000,mn,'b','LineWidth',2);
-                hold on
-                polarplot(0:2*pi/1000:2*pi-2*pi/1000,mn+se,'b','LineWidth',1,'LineStyle','--');
-                polarplot(0:2*pi/1000:2*pi-2*pi/1000,mn-se,'b','LineWidth',1,'LineStyle','--');
-                set(gca,'ThetaTickLabel',[]);
-                set(gca,'FontSize',16);
-                subplot(3,4,[9 10]); 
-                [n,x] = hist(per_syl_time(roi_n,indx(FR_ord)).data(:,1),0:0.2:2); %min(find(spikes_in_phraseType == max(spikes_in_phraseType)))
-                plot(x,n/sum(n),'LineWidth',2,'Color','b'); hold on;
-                [n,x] = hist(per_syl_time(roi_n,indx(FR_ord)).data(:,2),0:0.2:2);
-                plot(x,n/sum(n),'LineWidth',2,'Color','r');
-                set(gca,'FontSize',16); xlabel('Time (sec) from phrase edge'); ylabel('Frac. bursts');
-                legend({'onset' 'offset'});
-                title([num2str(numel(per_syl_num(roi_n,indx(FR_ord)).data)) ' spikes, FR=' num2str(spikes_in_phraseType(FR_ord))]);
-        %         title([vartest2(per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,1),per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,2),'Tail','right') ...
-        %             vartest2(per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,1),per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,2),'Tail','left')]);
-                [xidx,mn,se,mn2,se2] = MeanZscoredDFF_function(unique_dates(Day_num,:),sylnum,roi_n,1,0,zscoring_type);
-                temp_lcs = ~isnan(mn);
-                subplot(3,4,[11  12]);
-                %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn(temp_lcs)+se(temp_lcs) fliplr(mn(temp_lcs)-se(temp_lcs))],'b','FaceAlpha',0.7,'LineStyle','none');
-                plot(xidx(temp_lcs),mn(temp_lcs)+se(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1);
-                hold on;
-                plot(xidx(temp_lcs),mn(temp_lcs)-se(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1);
-                plot(xidx(temp_lcs),mn(temp_lcs),'b','LineWidth',2);
+                    subplot(3,4,7); polarhistogram(angle(per_syl_phases(roi_n,indx(FR_ord)).data),'BinWidth',pi/18);
+                    set(gca,'ThetaTickLabel',[]);
+                    set(gca,'FontSize',16);
+                    subplot(3,4,8);
+                    display([sylnum roi_n])
+                    [mn,se] = MeanZscoredDFF_angular_function(unique_dates(Day_num,:),sylnum,roi_n,zscoring_type);
+                    polarplot(0:2*pi/1000:2*pi-2*pi/1000,mn,'b','LineWidth',2);
+                    hold on
+                    polarplot(0:2*pi/1000:2*pi-2*pi/1000,mn+se,'b','LineWidth',1,'LineStyle','--');
+                    polarplot(0:2*pi/1000:2*pi-2*pi/1000,mn-se,'b','LineWidth',1,'LineStyle','--');
+                    set(gca,'ThetaTickLabel',[]);
+                    set(gca,'FontSize',16);
+                    subplot(3,4,[9 10]); 
+                    [n,x] = hist(per_syl_time(roi_n,indx(FR_ord)).data(:,1),0:0.2:2); %min(find(spikes_in_phraseType == max(spikes_in_phraseType)))
+                    plot(x,n/sum(n),'LineWidth',2,'Color','b'); hold on;
+                    [n,x] = hist(per_syl_time(roi_n,indx(FR_ord)).data(:,2),0:0.2:2);
+                    plot(x,n/sum(n),'LineWidth',2,'Color','r');
+                    set(gca,'FontSize',16); xlabel('Time (sec) from phrase edge'); ylabel('Frac. bursts');
+                    legend({'onset' 'offset'});
+                    title([num2str(numel(per_syl_num(roi_n,indx(FR_ord)).data)) ' spikes, FR=' num2str(spikes_in_phraseType(FR_ord))]);
+            %         title([vartest2(per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,1),per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,2),'Tail','right') ...
+            %             vartest2(per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,1),per_syl_time(roi_n,min(find(spikes_in_phraseType == max(spikes_in_phraseType)))).data(:,2),'Tail','left')]);
+                    [xidx,mn,se,mn2,se2] = MeanZscoredDFF_function(unique_dates(Day_num,:),sylnum,roi_n,1,0,zscoring_type);
+                    temp_lcs = ~isnan(mn);
+                    subplot(3,4,[11  12]);
+                    %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn(temp_lcs)+se(temp_lcs) fliplr(mn(temp_lcs)-se(temp_lcs))],'b','FaceAlpha',0.7,'LineStyle','none');
+                    plot(xidx(temp_lcs),mn(temp_lcs)+se(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1);
+                    hold on;
+                    plot(xidx(temp_lcs),mn(temp_lcs)-se(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1);
+                    plot(xidx(temp_lcs),mn(temp_lcs),'b','LineWidth',2);
 
-                temp_lcs = ~isnan(mn2);
-                %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn2(temp_lcs)+se2(temp_lcs) fliplr(mn2(temp_lcs)-se2(temp_lcs))],'b','FaceAlpha',0.3,'LineStyle','none');
-                plot(xidx(temp_lcs),mn2(temp_lcs)+se2(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1,'LineStyle','--');
-                hold on;
-                plot(xidx(temp_lcs),mn2(temp_lcs)-se2(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1,'LineStyle','--');
-                plot(xidx(temp_lcs),mn2(temp_lcs),'b','LineWidth',1,'LineStyle','--');
+                    temp_lcs = ~isnan(mn2);
+                    %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn2(temp_lcs)+se2(temp_lcs) fliplr(mn2(temp_lcs)-se2(temp_lcs))],'b','FaceAlpha',0.3,'LineStyle','none');
+                    plot(xidx(temp_lcs),mn2(temp_lcs)+se2(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1,'LineStyle','--');
+                    hold on;
+                    plot(xidx(temp_lcs),mn2(temp_lcs)-se2(temp_lcs),'Color',[0 0 1 0.5],'LineWidth',1,'LineStyle','--');
+                    plot(xidx(temp_lcs),mn2(temp_lcs),'b','LineWidth',1,'LineStyle','--');
 
-                [xidx,mn,se,mn2,se2] = MeanZscoredDFF_function(unique_dates(Day_num,:),sylnum,roi_n,0,0,zscoring_type);
-                temp_lcs = ~isnan(mn);
-                plot(xidx(temp_lcs),mn(temp_lcs)+se(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1);
-                hold on;
-                plot(xidx(temp_lcs),mn(temp_lcs)-se(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1);
-                %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn(temp_lcs)+se(temp_lcs) fliplr(mn(temp_lcs)-se(temp_lcs))],'r','FaceAlpha',0.7,'LineStyle','none');
-                hold on;
-                plot(xidx(temp_lcs),mn(temp_lcs),'r','LineWidth',2);
+                    [xidx,mn,se,mn2,se2] = MeanZscoredDFF_function(unique_dates(Day_num,:),sylnum,roi_n,0,0,zscoring_type);
+                    temp_lcs = ~isnan(mn);
+                    plot(xidx(temp_lcs),mn(temp_lcs)+se(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1);
+                    hold on;
+                    plot(xidx(temp_lcs),mn(temp_lcs)-se(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1);
+                    %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn(temp_lcs)+se(temp_lcs) fliplr(mn(temp_lcs)-se(temp_lcs))],'r','FaceAlpha',0.7,'LineStyle','none');
+                    hold on;
+                    plot(xidx(temp_lcs),mn(temp_lcs),'r','LineWidth',2);
 
-                temp_lcs = ~isnan(mn2);
-                
-                %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn2(temp_lcs)+se2(temp_lcs) fliplr(mn2(temp_lcs)-se2(temp_lcs))],'r','FaceAlpha',0.3,'LineStyle','none');
-                plot(xidx(temp_lcs),mn2(temp_lcs)+se2(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1,'LineStyle','--');
-                hold on;
-                plot(xidx(temp_lcs),mn2(temp_lcs)-se2(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1,'LineStyle','--');
-                plot(xidx(temp_lcs),mn2(temp_lcs),'r','LineWidth',1,'LineStyle','--');
+                    temp_lcs = ~isnan(mn2);
 
-                set(gca,'FontSize',16); xlabel('Time (sec) from phrase edge'); ylabel('Mean dff (norm.)');
-                title([FR_ord phrase_specificity(end)])
-                set(gcf,'Position',[98         129        1148        1088]);
-                filename = [bird_name '_' unique_dates(Day_num,:) '_roi' num2str(roi_n) '_syl' num2str(sylnum) ...
-                     '_' num2str(phrase_specificity(end)) '_' num2str(FR_ord)];
-                cd(laptop_manualROI_analyses_folder);
+                    %fill([xidx(temp_lcs) fliplr(xidx(temp_lcs))],[mn2(temp_lcs)+se2(temp_lcs) fliplr(mn2(temp_lcs)-se2(temp_lcs))],'r','FaceAlpha',0.3,'LineStyle','none');
+                    plot(xidx(temp_lcs),mn2(temp_lcs)+se2(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1,'LineStyle','--');
+                    hold on;
+                    plot(xidx(temp_lcs),mn2(temp_lcs)-se2(temp_lcs),'Color',[1 0 0 0.5],'LineWidth',1,'LineStyle','--');
+                    plot(xidx(temp_lcs),mn2(temp_lcs),'r','LineWidth',1,'LineStyle','--');
 
-                saveas(hf,fullfile(laptop_manualROI_analyses_folder,unique_dates(Day_num,:),[filename '.png']));
-                hgsave(hf,fullfile(laptop_manualROI_analyses_folder,unique_dates(Day_num,:),[filename '.fig']));
-                hgclose(hf);
+                    set(gca,'FontSize',16); xlabel('Time (sec) from phrase edge'); ylabel('Mean dff (norm.)');
+                    title([FR_ord phrase_specificity(end)])
+                    set(gcf,'Position',[98         129        1148        1088]);
+                    filename = [bird_name '_' unique_dates(Day_num,:) '_roi' num2str(roi_n) '_syl' num2str(sylnum) ...
+                         '_' num2str(phrase_specificity(end)) '_' num2str(FR_ord)];
+                    cd(laptop_manualROI_analyses_folder);
+
+                    saveas(hf,fullfile(laptop_manualROI_analyses_folder,unique_dates(Day_num,:),[filename '.png']));
+                    hgsave(hf,fullfile(laptop_manualROI_analyses_folder,unique_dates(Day_num,:),[filename '.fig']));
+                    hgclose(hf);
+                end
             end
+        catch eeem
         end
     end
     cd(laptop_manualROI_analyses_folder);
