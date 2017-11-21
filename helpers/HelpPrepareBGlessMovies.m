@@ -8,7 +8,7 @@ n_del_frames = 6; % How many frames to disregard at the video's onset
 % calculate a single background frame - b1
 b1 = quantile(Y(:,:,n_del_frames+1:end),0.1,3);
 b1 = (b1-min(b1(:)))/(max(b1(:))-min(b1(:)));
-% legacy .... b1 = b1/median(b1(:));
+b1 = b1/median(b1(:));
 
 % calculate a backroung time series as the median of each frame
 bt = median(reshape(Y,rows*columns,frames));
