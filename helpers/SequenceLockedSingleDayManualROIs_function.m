@@ -90,7 +90,7 @@ hvc_offset = 0.04;
 
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
 
-    FILES = dir('ROIdata*.mat');
+    FILES = dir('baseROIdata*.mat');
     FILES = {FILES.name};
     hits = [];
     durations = [];

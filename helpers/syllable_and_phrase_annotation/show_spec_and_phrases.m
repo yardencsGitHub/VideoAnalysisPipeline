@@ -31,8 +31,8 @@ keys = keys(indx);
 startloc = min(find(locs >= startfrom));
 
 %%
-
-for fnum = startloc:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
+startloc;
+for fnum = 1834:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
 
     matfile = [keys{fnum}(1:end-3) 'mat'];
     load(matfile);

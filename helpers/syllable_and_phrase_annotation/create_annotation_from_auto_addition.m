@@ -11,7 +11,7 @@ new_files_list_file = 'FS_movies_list'; % contains the variables keys, noisefile
 
 cd(DIR);
 load(new_files_list_file);
-MinSylDuration = 0.008; % minimal syllable duration = 8 mSec
+MinSylDuration = 0.005; % minimal syllable duration = 8 mSec
 params = load(old_annotation_file);
 old_songfiles = [];
 old_songfiles_to_reannotate = [];

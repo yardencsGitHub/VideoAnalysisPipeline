@@ -16,7 +16,8 @@ laptop_annotated_images_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Dat
 DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/too_large_or_damaged/'];
 laptop_manualROI_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/ManualROIs'];
 
-syllables = [0 1 2 8 207 300 301 304]; %[0:4 8 9 200:209 300 301 303 304]; 
+syllables = [templates.wavs.segType]; %[0 1 2 8 207 300 301 304]; %[0:4 8 9 200:209 300 301 303 304]; 
+syllables = syllables((idx(22:26)));
 %l[5 6 7 302]
 % [0 1 2 8 207 300 301 304]
 %setdiff([0:9 200:209 300:309 400:409 500 ],[400 500 2 200 202 204 300 301 302 303 0 1 4 5 8 9 203 208 209 304:306 308:309 408]);
@@ -38,7 +39,7 @@ addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitH
 
 cd(laptop_wav_folder);
 load(fullfile(laptop_wav_folder,[template_file '.mat']));
-tmp_syllables = [[templates.wavs.segType] -1 102 103];
+tmp_syllables = [[templates.wavs.segType] ]; %-1 102 103
 n_syllables = numel(syllables);
 
 colors = distinguishable_colors(numel(tmp_syllables));
@@ -61,7 +62,7 @@ for sylnum = 1:numel(templates.wavs)
         IMAGE1 = [IMAGE1 abs(S) zeros(fbins,ceil(separation/dt))]; %abs(S)
         plot(curr_start+dt:dt:curr_start+sig_len*dt,ones(1,sig_len),...
             'LineWidth',10,'Color',colors(find(tmp_syllables == templates.wavs(sylnum).segType),:));
-        text(curr_start,2,num2str(templates.wavs(sylnum).segType),'FontSize',16);
+        text(curr_start,2,num2str(templates.wavs(sylnum).segType),'FontSize',16,'Color',[0 0 0]);
         curr_start = curr_start + sig_len*dt + separation;
         
         hold on;
@@ -115,13 +116,13 @@ xtickformat('%2.0f')
 set(gca,'XTick',xt+sig_lns(cnt)*dt/2);
 tlbl = {};
 for cnt = 1:numel(sig_lns)
-    tlbl = {tlbl{:} sprintf('%3.0f',sig_lns(cnt))};
+    tlbl = {tlbl{:} ['\color{black}' sprintf('%3.0f',sig_lns(cnt))]};
 end
 set(gca,'XTickLabel',tlbl); %sig_lns*dt*1000);
 
 
-set(gca,'YTick',[500 1500 3000 4500])
+set(gca,'YTick',[500 1500 3000 4500],'Color','k')
 set(gca,'FontSize',16);
-xlabel('Syllable durations (msec)');
-ylabel('frequency (Hz)');
+xlabel('Syllable durations (msec)','Color',[0 0 0]);
+ylabel('frequency (Hz)','Color',[0 0 0]);
 colormap(copper)
