@@ -4,8 +4,8 @@ last_idx = 0;
 init_idx = 0;
 last_date = '2017_02_29';
 last_time = '00_00_00';
-bird_name = 'lrb85315';
-bird_folder_name = 'lrb853_15';
+bird_name = 'lbr3022'; %'lbr3009'; %'lrb85315';
+bird_folder_name = 'lbr3022';%'lbr3009'; %'lrb853_15';
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -94,14 +94,15 @@ Prepare_Raw_Video_Audio;
 % Needs fixing: create_annotation_from_auto_addition 
 DIR = laptop_wav_folder; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
 annDIR = laptop_annotated_dir;
-auto_file = 'Results_Aug_18_2017.mat';
-old_annotation_file = 'lbr3022_annotation3';
-new_annotation_file = 'lrb85315auto_annotation5'; %'lbr3022auto_annotation3';
+auto_file = 'Results_Oct_06_2017.mat';
+old_annotation_file = 'lbr3022auto_annotation5';
+new_annotation_file = 'lbr3022auto_annotation5'; %'lbr3022auto_annotation3';
 template_file = 'lbr3022_template.mat';
+%%
 corrections = 0; % a flag that indicates that we're going to reopen old annotations and replace some syllables' annotation
 isnew = 1; % a flag that indicates if this is the first time we annotate files from this bird
 syllables_to_reannotate = []; %  Theses syllables in the old files will trigger reannotation
-trill_syllables = [0:4 8 9 204 206 207 300 301];
+trill_syllables = [0:4 8 9 204 206 207 300 301 304];
 copyfile(fullfile(laptop_mov_folder,'FS_movies_list.mat'),fullfile(laptop_wav_folder,'FS_movies_list.mat'));
 create_annotation_from_auto_addition;
 if ~isnew
@@ -111,6 +112,29 @@ else
     keys = tempkeys;
 end
 %save(new_annotation_file,'elements','keys');
+%% 6.1 Re-train deep network with new files
+% In case we added new syllables there must be a step for checking label
+% compatibility
+old_template_file = 'lbr3022_template.mat';
+new_template_file = 'lbr3022_template.mat';
+old_annotation_file = 'lbr3022auto_annotation3';
+new_annotation_file = 'lbr3022auto_annotation4';
+temporary_annotation = 'lbr3022auto_temp_ann';
+cd(laptop_wav_folder);
+new_files_numbers = []; load('new_files_numbers','new_files_numbers');
+old_files_numbers = []; load('old_files_numbers','old_files_numbers');
+load(new_annotation_file);
+file_numbers = union(new_files_numbers,old_files_numbers);
+indexes = [];
+for cnt = 1:numel(keys)
+    if ismember(str2num(elements{cnt}.filenum),file_numbers)
+        indexes = [indexes; cnt];
+    end
+end
+keys = keys(indexes);
+elements = elements(indexes);
+save(temporary_annotation,'keys','elements');
+add_annotation_to_mat(pwd,temporary_annotation,new_template_file);
 %% 7. Clean annotation results (on laptop)
 % Move new annotation file to laptop_wav_folder
 % Create phrase and spectrogram images using the script
@@ -118,10 +142,10 @@ end
 % Use TweetVisionLite to fix mistakes
 startfrom = init_idx+1;
 targetdir = laptop_annotated_images_dir; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
-template_file = 'lrb85315template'; %'lbr3022_template.mat';
+template_file = 'lbr3022_template.mat'; %'lrb85315template'; %
 cd(laptop_wav_folder);
 load(template_file);
-syllables = [[templates.wavs.segType] -1];
+syllables = [[templates.wavs.segType] 101 -1 307];
 show_spec_and_phrases;
 %% 8. Create Maximum projection images and movies (Desktop)
 % Create the maximum, background subtracted, projection for each song movie
