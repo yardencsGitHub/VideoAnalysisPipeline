@@ -8,8 +8,8 @@ last_idx = 0;
 init_idx = 0;
 last_date = '2017_02_29';
 last_time = '00_00_00';
-bird_name = 'lbr3022';
-bird_folder_name = 'lbr3022';
+bird_name = 'lrb85315'; %'lbr3009';
+bird_folder_name = 'lrb853_15'; % 'lbr3009';
 
 % Folders on Data desktop:
 desktop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs'];
@@ -25,9 +25,9 @@ n_del_frames = 5; % # of frames to ignore in the beginning of wach file in calcu
 filt_rad = 50; filt_sigma = 45; % highpass filter 
 h = fspecial('gaussian',filt_rad,filt_sigma);
 date_loc = [13 4]; % location of date string in file name w.r.t. end
-MaxMaxProjDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_name '/movs/MaxProj/max_images'];
-RawDataDir = ['/Volumes/home/Data/Imaging/' bird_name '/RawData'];
-ManualMaxProjROIsDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_name '/ManualROIs'];
+MaxMaxProjDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs/MaxProj/max_images'];
+RawDataDir = ['/Volumes/home/Data/Imaging/' bird_folder_name '/RawData'];
+ManualMaxProjROIsDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/ManualROIs'];
 % create folders
 if ~exist(ManualMaxProjROIsDir,'dir')
     mkdir(ManualMaxProjROIsDir);
@@ -86,7 +86,7 @@ for day_cnt = 1:numel(days_to_process)
 %     Y = Y - min(min(min((Y(:,:,n_del_frames+1:end)))));
 %     Y = Y / max(max(max((Y(:,:,n_del_frames+1:end)))));
     b1 = quantile(Y(:,:,n_del_frames+1:end),0.05,3);
-    b1 = (b1-min(b1(:)))/max(b1(:));
+    b1 = (b1-min(b1(:)))/(max(b1(:))-min(b1(:)));
     b1 = b1/median(b1(:));
     
     
@@ -104,7 +104,7 @@ for day_cnt = 1:numel(days_to_process)
         
     end
     
-    data_filename = ['ROIdata' filename(8:end)];
+    data_filename = ['testROIdata' filename(8:end)];
     save(data_filename,'dff','vidTimes');
     clear dff;
 end

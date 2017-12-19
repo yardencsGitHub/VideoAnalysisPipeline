@@ -22,12 +22,13 @@ for fnum = startloc:numel(FILES)
     tokens = regexp(FILES(fnum).name,'_','split');
     %Y = Y(:,:,n_del_frames+1:end);
     Y = imresize(vidMat(:,:,n_del_frames+1:end),0.5);
+    
     Y = Y - min(Y(:));
     Y = Y / max(Y(:));
     Y = convn(Y,reshape([1 1 1 1 1] / 5, 1, 1, []), 'same');
     base = imfilter(Y,h,'circular','replicate');
     Y = (Y - base);
-    Y = bsxfun(@minus,Y,quantile(Y,0.05,3)); %bsxfun(@rdivide,,quantile(Y,0.05,3))
+    Y = bsxfun(@minus,Y,quantile(Y,0.1,3)); %bsxfun(@rdivide,,quantile(Y,0.05,3))
     maxY = max(Y,[],3);
     maxY(maxY(:) < 0.05) = 0;
     out_filename = char(join(tokens(2:end),'_'));
