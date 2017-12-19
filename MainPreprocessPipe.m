@@ -4,8 +4,10 @@ last_idx = 0;
 init_idx = 0;
 last_date = '2017_02_29';
 last_time = '00_00_00';
+
 bird_name = 'lbr3022'; %'lbr3009'; %'lrb85315';
 bird_folder_name = 'lbr3022';%'lbr3009'; %'lrb853_15';
+
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -18,7 +20,8 @@ DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/'
 
 % Folders on Data desktop:
 desktop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs'];
-desktop_storage_folder = ['/Volumes/home/Data/Imaging/' bird_folder_name '/RawData'];
+desktop_storage_folder = ['/Volumes/home/Data/Imaging/' bird_folder_name '/RawData']; %temporary
+desktop_storage_folder = ['/Volumes/CanaryData/DATA/' bird_folder_name '/RawData'];
 desktop_max_projections_dir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs/MaxProj'];
 %% check and create folders:
 % laptop
@@ -73,6 +76,8 @@ save FS_movies_list keys songfiles noisefiles;
 %% 5. Create Raw data variables and store them on the storage device
 % Make sure the storage device is mapped
 % Move list of movie files to process from the laptop (created in (4))
+% Create a folder with the bird's name that contain's a folder called
+% 'RawData' on the external storage (desktop_storage_folder)
 % Run script "Prepare_Raw_Video_Audio"
 cd(desktop_mov_folder);
 OutputFolder = desktop_storage_folder; % '/Volumes/home/Data/Imaging/lrb853_15/RawData';
