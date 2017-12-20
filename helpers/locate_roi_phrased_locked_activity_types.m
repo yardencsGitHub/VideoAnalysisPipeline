@@ -72,7 +72,7 @@ for Day_num = 1: size(unique_dates,1)
     results_hist_off = {};
     Day = unique_dates(Day_num,:);
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
-    FILES = dir('ROIdata*.mat');
+    FILES = dir('baseROIdata*.mat');
     FILES = {FILES.name};
     for syl_cnt = 1:numel(syllables)
         sylnum = syllables(syl_cnt);
@@ -170,7 +170,16 @@ for Day_num = 1: size(unique_dates,1)
                             signal = smooth(s(roi_n,:),3);
                     end %(n_del_frames+1:end)
                     
-                    map_path = map_states(roi_n,:);
+                    map_path = map_states(roi_n,1:numel(signal));
+                    map_diff = diff([0 map_path 0]);
+                    map_on = find(map_diff == 1);
+                    map_off = find(map_diff == -1)-1;
+                    mn = mean(signal);
+                    for mapcnt = 1:numel(map_on)
+                        if mean(signal(map_on(mapcnt):map_off(mapcnt))) < mn
+                            map_path(map_on(mapcnt):map_off(mapcnt)) = 0;
+                        end
+                    end
 %                     clear sigma;
 %                     try
 %                         mu = [quantile(sig,0.05) max(sig)];
