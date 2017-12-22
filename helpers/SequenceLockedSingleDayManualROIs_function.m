@@ -17,7 +17,7 @@ align_syls = 0;
 thr = 0.02;
 zscoring_type = 0;
 delete_frames = 1;
-n_del_frames = 4;
+n_del_frames = 6;
  
 hvc_offset = 0.04;
     %Day = '2017_06_28';
