@@ -57,7 +57,7 @@ unique_dates = datestr(setdiff(unique(datenum(dates)),736804),'yyyy_mm_dd'); %do
 
 %%
 
-for Day_num = 65: size(unique_dates,1)
+for Day_num = 1: size(unique_dates,1)
     results_max = [];
     results_min = [];
     results_std = [];
@@ -69,6 +69,8 @@ for Day_num = 65: size(unique_dates,1)
     results_ratio_std = [];
     results_hmm = [];
     results_hmm_out = [];
+    results_hmm_time = [];
+    results_hmm_time_out = [];
     results_hist_on = {};
     results_hist_off = {};
     Day = unique_dates(Day_num,:);
@@ -111,6 +113,8 @@ for Day_num = 65: size(unique_dates,1)
             sig_peak = sig_integrals;
             sig_bottom = sig_integrals;
             sig_hmm = sig_integrals;
+            sig_hmm_time = sig_integrals;
+            sig_hmm_time_out = sig_integrals;
             sig_hmm_out = sig_integrals;
             active_times_on = cell(size(dff,1),1);
             active_times_off = cell(size(dff,1),1);
@@ -209,9 +213,13 @@ for Day_num = 65: size(unique_dates,1)
                         sig_bottom(cnt,roi_n) = min(signal((t >= tonset) & (t <= toffset)));
                         sig_hmm(cnt,roi_n) = 1*(sum(map_path((t >= tonset) & ...
                         (t <= toffset))) >= min_num_active_bins);
+                        sig_hmm_time(cnt,roi_n) = sum(map_path((t >= tonset) & ...
+                        (t <= toffset)))/30; 
+                        sig_hmm_time_out(cnt,roi_n) = sum(map_path((t < tonset-edges(1)) | ...
+                        (t > toffset+edges(2))))/30; 
                         sig_hmm_out(cnt,roi_n) = 1*(sum(map_path((t < tonset-edges(1)) | ...
                         (t > toffset+edges(2))))/sum(((t < tonset-edges(1)) | ...
-                        (t > toffset+edges(2)))) >= min_num_active_bins/30);
+                        (t > toffset+edges(2)))));% >= min_num_active_bins/30);
 
                         active_times_on{roi_n} = [active_times_on{roi_n} t(map_path == 1)-tonset];
                         active_times_off{roi_n} = [active_times_off{roi_n} (t(map_path == 1)-tonset)/(toffset-tonset)];
@@ -220,6 +228,8 @@ for Day_num = 65: size(unique_dates,1)
                         sig_bottom(cnt,roi_n) = nan;
                         sig_hmm(cnt,roi_n) = nan;
                         sig_hmm_out(cnt,roi_n) = nan;
+                        sig_hmm_time(cnt,roi_n) = nan;
+                        sig_hmm_time_out(cnt,roi_n) = nan;
                     end
 
                 end
@@ -248,7 +258,8 @@ for Day_num = 65: size(unique_dates,1)
             results_ratio_max = [results_ratio_max quantile(ratios,0.9,1)']; %max(ratios,[],1)'];
             results_hmm = [results_hmm nanmean(sig_hmm,1)'];
             results_hmm_out = [results_hmm_out nanmean(sig_hmm_out,1)'];
-            
+            results_hmm_time = [results_hmm_time nanmean(sig_hmm_time,1)'];
+            results_hmm_time_out = [results_hmm_time_out nanmean(sig_hmm_time_out,1)'];
             if (Day_num == 65 && syl_cnt == 26)
                 '9';
             end
@@ -265,6 +276,9 @@ for Day_num = 65: size(unique_dates,1)
             results_std_in = [results_std_in nan*ones(size(dff,1),1)];
             results_hmm = [results_hmm nan*ones(size(dff,1),1)];
             results_hmm_out = [results_hmm_out nan*ones(size(dff,1),1)];
+            results_hmm_time = [results_hmm_time nan*ones(size(dff,1),1)];
+            results_hmm_time_out = [results_hmm_time_out nan*ones(size(dff,1),1)];
+            
             results_hist_on = {results_hist_on{:} []};
             results_hist_off = {results_hist_off{:} []};
         end
@@ -281,6 +295,8 @@ for Day_num = 65: size(unique_dates,1)
     results(Day_num).Std_in = results_std_in;
     results(Day_num).hmm = results_hmm;
     results(Day_num).hmm_out = results_hmm_out;
+    results(Day_num).hmm_time = results_hmm_time;
+    results(Day_num).hmm_time_out = results_hmm_time_out;
     results(Day_num).hist_on = results_hist_on;
     results(Day_num).hist_rel = results_hist_off;
 end

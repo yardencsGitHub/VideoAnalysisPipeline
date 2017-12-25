@@ -12,6 +12,23 @@ bird_name = 'lrb85315'; %'lbr3009';
 bird_folder_name = 'lrb853_15'; % 'lbr3009';
 
 % Folders on Data desktop:
+bird_name = 'lrb85315';
+bird_folder_name = 'lrb853_15';
+template_file = 'lrb85315template';
+annotation_file = 'lrb85315auto_annotation5_fix';
+
+laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
+laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
+laptop_gif_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav/gif'];
+laptop_storage_folder = ['/Volumes/CanaryData/DATA/lrb853_15/movs/'];
+laptop_annotated_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav/annotated'];
+laptop_annotated_images_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav/annotated/images'];
+DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/too_large_or_damaged/'];
+laptop_manualROI_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/ManualROIs'];
+
+
+
+
 desktop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs'];
 desktop_storage_folder = ['/Volumes/home/Data/Imaging/' bird_folder_name '/RawData'];
 desktop_max_projections_dir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_folder_name '/movs/MaxProj'];
