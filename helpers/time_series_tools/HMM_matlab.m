@@ -40,7 +40,7 @@ unique_dates = datestr(setdiff(unique(datenum(dates)),736804),'yyyy_mm_dd'); %do
 for Day_num = 1: size(unique_dates,1)
     Day = unique_dates(Day_num,:);
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
-    FILES = dir('baseROIdata*.mat');
+    FILES = dir('NonoverlapBaseROIdata*.mat');
     FILES = {FILES.name};
     for fnum = 1:numel(FILES)
         fname = FILES{fnum};
