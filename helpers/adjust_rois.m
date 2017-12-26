@@ -1,3 +1,10 @@
+% This is a list of scripts that allow manipulating existing ROI files and
+% ROI data.
+% 1. Adjusting all roi shapes
+% 2. Remove overlapping rois
+% 3. create an image of a specific roi map (for examples)
+% 4. Delete df/f files with a defined prefix (to get rid of old attempts)
+
 cd('/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata');
 basedir = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata';
 dirs = dir;
@@ -39,7 +46,7 @@ for dirnum = 26:numel(dirs)
     save(outname,'ROI');
     hgclose(f);
 end
-%% now remove overlapping rois
+%% 2. now remove overlapping rois
 cd('/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata');
 basedir = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata';
 dirs = dir;
@@ -69,10 +76,21 @@ for dirnum = 1:numel(dirs)
         save(outname,'ROI');
     end
 end
-%% test
+%% 3. create an image of a specific roi map (for examples)
 mask = zeros(480,640);
 for roi_n = 1:numel(ROI.coordinates)
    
     mask(ROI.coordinates{roi_n}(:,1)*nrows+ROI.coordinates{roi_n}(:,2))=roi_n;
 end
 figure; imagesc(mask)
+
+%% 4. Delete df/f files with a defined prefix (to get rid of old attempts)
+prefix = 'testROIdata';
+cd('/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata');
+basedir = '/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata';
+dirs = dir;
+dirs = dirs(4:end);
+for dirnum = 1:numel(dirs)
+    cd(fullfile(basedir,dirs(dirnum).name));
+    delete([prefix '*.mat']);
+end
