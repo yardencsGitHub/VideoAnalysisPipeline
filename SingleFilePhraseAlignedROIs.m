@@ -3,10 +3,10 @@
 %last_idx = 7982;
 %last_date = '2017_06_29';
 %last_time = '08_24_46';
-bird_name = 'lbr3022'; %'lrb85315';
-bird_folder_name = 'lbr3022'; % 'lrb853_15';
-template_file = 'lbr3022_template.mat'; %'lrb85315template';
-annotation_file = 'lbr3022auto_annotation4.mat'; %'lrb85315auto_annotation5_fix';
+bird_name = 'lrb85315';%'lbr3022'; %
+bird_folder_name = 'lrb853_15';%'lbr3022'; % 
+template_file = 'lrb85315template';%'lbr3022_template.mat'; %
+annotation_file = 'lrb85315auto_annotation5_fix';%'lbr3022auto_annotation4.mat'; %
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -25,12 +25,12 @@ desktop_max_projections_dir = '/Users/yardenc/Documents/Experiments/Imaging/Cana
 
 
 %% Create single song phrase annotated ROI (zscored) activity
-addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/zftftb'));
-addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'));
-addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'));
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/zftftb'),'-end');
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'),'-end');
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'),'-end');
 cd (laptop_manualROI_folder);
 load(template_file);
-syllables = [[templates.wavs.segType] 305 -1 100 101]; %[[templates.wavs.segType] -1 102 103];
+syllables = [[templates.wavs.segType] -1 102 103]; %[[templates.wavs.segType] 305 -1 100 101]; %
 load(annotation_file); 
 ord = [];
 dates = [];
@@ -43,6 +43,7 @@ end
 elements = elements(indx);
 keys = keys(indx);
 dates = dates(indx,:);
+unique_dates = unique(datenum(dates));
 cd ROIdata;
 %%
 SubsetOfDays = {'2017_05_11' '2017_05_15' '2017_05_25' '2017_05_30' ...
@@ -50,9 +51,10 @@ SubsetOfDays = {'2017_05_11' '2017_05_15' '2017_05_25' '2017_05_30' ...
     '2017_06_16' '2017_06_19' '2017_06_20' '2017_06_21' '2017_06_22' '2017_06_23' ...
     '2017_06_24' '2017_06_25' '2017_06_26' '2017_07_03' '2017_07_04'};
 Day = '2017_06_15';
-for dayn = 18:numel(SubsetOfDays)
+SubsetOfDays = mat2cell(datestr(unique_dates,'yyyy_mm_dd'),ones(1,numel(unique_dates)),10);
+for dayn = 1:numel(SubsetOfDays)
     Day = SubsetOfDays{dayn};
-    n_del_frames = 5;
+    n_del_frames = 6;
     filecnts = find(datenum(dates) == datenum(Day));
     for cnt = filecnts(1):filecnts(end) %963:numel(ord)
         cd([laptop_manualROI_folder '/ROIdata']);

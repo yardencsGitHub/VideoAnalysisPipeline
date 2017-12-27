@@ -75,7 +75,7 @@ for Day_num = 1: size(unique_dates,1)
     results_hist_off = {};
     Day = unique_dates(Day_num,:);
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
-    FILES = dir('baseROIdata*.mat');
+    FILES = dir('NonoverlapBaseROIdata*.mat');
     FILES = {FILES.name};
     for syl_cnt = 1:numel(syllables)
         sylnum = syllables(syl_cnt);
