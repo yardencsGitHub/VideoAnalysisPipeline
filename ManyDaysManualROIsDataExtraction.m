@@ -16,8 +16,8 @@ desktop_max_projections_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Can
 
 
 
-addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'));
-addpath(genpath('/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline'));
+addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'),'-end');
+addpath(genpath('/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline'),'-end');
 
 
 n_del_frames = 6; % # of frames to ignore in the beginning of wach file in calculations

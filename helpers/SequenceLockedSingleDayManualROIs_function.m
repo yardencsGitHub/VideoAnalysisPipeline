@@ -28,7 +28,7 @@ hvc_offset = 0.04;
     %locktoonset = 0;
     mulcnt = 2;
     %spikes = 2;
-    edges = [0.0 0.0];
+    edges = [1 0.0];
     opacity_factor = 0.5;
     
    
@@ -248,7 +248,7 @@ hvc_offset = 0.04;
                 case 0
                   signal = c; %smooth(s(ROIs(roi_n),:),3);  
                 case 3
-%                     events_fname = ['Events_' FILES{fnum}];
+%                     events_fname = ['GaussHmmMAP_' FILES{fnum}];
 %                     load(events_fname);
 %                     signal = map_states(ROIs(roi_n),n_del_frames+1:end);
                     sig = y(ROIs(roi_n),:);
