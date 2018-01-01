@@ -1,6 +1,6 @@
 %% create color legend and syllable spectrograms
 separation = 0.05; % seconds, image separation
-freq_min = 300; freq_max = 6000;
+freq_min = 00; freq_max = 8000;
 
 bird_name = 'lbr3022'; %'lrb85315';
 bird_folder_name = 'lbr3022'; %'lrb853_15';
