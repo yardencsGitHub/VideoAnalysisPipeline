@@ -3,10 +3,10 @@
 %last_idx = 7982;
 %last_date = '2017_06_29';
 %last_time = '08_24_46';
-bird_name = 'lrb85315';%'lbr3022'; %
-bird_folder_name = 'lrb853_15';%'lbr3022'; % 
-template_file = 'lrb85315template';%'lbr3022_template.mat'; %
-annotation_file = 'lrb85315auto_annotation5_fix';%'lbr3022auto_annotation4.mat'; %
+bird_name = 'lbr3022'; %'lrb85315';%
+bird_folder_name = 'lbr3022'; % 'lrb853_15';%
+template_file = 'lbr3022_template.mat'; %'lrb85315template';%
+annotation_file = 'lbr3022auto_annotation5.mat'; %'lrb85315auto_annotation5_fix';%
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -30,7 +30,7 @@ addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitH
 addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'),'-end');
 cd (laptop_manualROI_folder);
 load(template_file);
-syllables = [[templates.wavs.segType] -1 102 103]; %[[templates.wavs.segType] 305 -1 100 101]; %
+syllables = [[templates.wavs.segType] -1]; %[[templates.wavs.segType] 305 -1 100 101]; %
 load(annotation_file); 
 ord = [];
 dates = [];
@@ -50,8 +50,8 @@ SubsetOfDays = {'2017_05_11' '2017_05_15' '2017_05_25' '2017_05_30' ...
     '2017_06_05' '2017_06_06' '2017_06_08' '2017_06_14' '2017_06_15' ...
     '2017_06_16' '2017_06_19' '2017_06_20' '2017_06_21' '2017_06_22' '2017_06_23' ...
     '2017_06_24' '2017_06_25' '2017_06_26' '2017_07_03' '2017_07_04'};
-Day = '2017_06_15';
-SubsetOfDays = mat2cell(datestr(unique_dates,'yyyy_mm_dd'),ones(1,numel(unique_dates)),10);
+%Day = '2017_06_15';
+%SubsetOfDays = mat2cell(datestr(unique_dates,'yyyy_mm_dd'),ones(1,numel(unique_dates)),10);
 for dayn = 1:numel(SubsetOfDays)
     Day = SubsetOfDays{dayn};
     n_del_frames = 6;
@@ -65,7 +65,7 @@ for dayn = 1:numel(SubsetOfDays)
 
         cd(dates(loc,:)); % 2017_07_06;
         try
-            load(['ROIdata_' keys{loc}(1:end-3) 'mat']); % lrb85315_8105_2017_07_06_05_37_56;
+            load(['baseROIdata_' keys{loc}(1:end-3) 'mat']); % lrb85315_8105_2017_07_06_05_37_56;
         catch em
             if strcmp(dates(cnt,:),'2017_04_19')
                 continue;
@@ -73,8 +73,8 @@ for dayn = 1:numel(SubsetOfDays)
             tokens = regexp(keys{loc},'_','split');
             tokens{2} = num2str(str2num(tokens{2})); %sprintf('%04d',str2num(tokens{2}));
             fname = char(join(tokens,'_'));
-            [SUCCESS,MESSAGE,MESSAGEID] = movefile(['ROIdata_' fname(1:end-3) 'mat'],['ROIdata_' keys{loc}(1:end-3) 'mat']);
-            load(['ROIdata_' keys{loc}(1:end-3) 'mat']);
+            [SUCCESS,MESSAGE,MESSAGEID] = movefile(['baseROIdata_' fname(1:end-3) 'mat'],['baseROIdata_' keys{loc}(1:end-3) 'mat']);
+            load(['baseROIdata_' keys{loc}(1:end-3) 'mat']);
             display('fixed file name');
         end
 
