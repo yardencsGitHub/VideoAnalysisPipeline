@@ -1,8 +1,9 @@
-function [resmat, state_count, state_labels] = create_first_order_transition_matrix(path_to_annotation_file,ignore_entries,join_entries,to_normalize,include_zero)
+function [resmat, state_count, state_labels] = create_first_order_transition_matrix(path_to_annotation_file,ignore_dates,ignore_entries,join_entries,to_normalize,include_zero)
 % This script takes an annotation file and returns a square matrix of
 % either normalized or non-normalized transition matrix
 % Inputs:
 %   path_to_annotation_file - Full or relative
+%   ignore_dates - days of data to be ignored.
 %   ignore_entries - A vector of label numbers to ignore completely. 
 %   join_entries - A cell of vectors, each containing a >1 number of labels
 %   to treat as belonging to the same state. The lists shouldn't overlap
@@ -15,7 +16,7 @@ function [resmat, state_count, state_labels] = create_first_order_transition_mat
 %   to j.
 %   state_count - # of times each label is encountered.
 %   state_labels - the lables of the matrix
-MaxSep = 0.25; % maximal phrase separation within a bout (sec)
+MaxSep = 0.5; % maximal phrase separation within a bout (sec)
 
 if ~exist(path_to_annotation_file)
     resmat = [];
@@ -42,7 +43,7 @@ end
 if flag == 1
     resmat = [];
     state_labels = [];
-    display(['join or ignore lists overlap'])
+    disp(['join or ignore lists overlap'])
     return;
 end
     
@@ -62,6 +63,10 @@ syllables = [-1000 syllables -2000];
 num_syllables = numel(syllables);
 resmat = zeros(num_syllables);
 for fnum = 1:numel(keys)
+    if ismember(return_date_num(keys{fnum}),datenum(ignore_dates))
+        '4';
+        continue;
+    end
     element = elements{fnum};
     locs = find(ismember(element.segType,ignore_entries));
     element.segAbsStartTimes(locs) = [];
@@ -103,4 +108,10 @@ end
     
 resmat(isnan(resmat)) = 0;
 state_labels = syllables;
+end
+
+function res = return_date_num(filestr)
+    tokens = regexp(filestr,'_','split');
+    res = datenum(char(join(tokens(3:5),'_')));
+end
 
