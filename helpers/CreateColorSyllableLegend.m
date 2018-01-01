@@ -16,8 +16,8 @@ laptop_annotated_images_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Dat
 DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/too_large_or_damaged/'];
 laptop_manualROI_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/ManualROIs'];
 
-syllables = [templates.wavs.segType]; %[0 1 2 8 207 300 301 304]; %[0:4 8 9 200:209 300 301 303 304]; 
-syllables = syllables((idx(22:26)));
+syllables = [5 6 7]; %[templates.wavs.segType]; %[0 1 2 8 207 300 301 304]; %[0:4 8 9 200:209 300 301 303 304]; 
+%syllables = syllables((idx(22:26)));
 %l[5 6 7 302]
 % [0 1 2 8 207 300 301 304]
 %setdiff([0:9 200:209 300:309 400:409 500 ],[400 500 2 200 202 204 300 301 302 303 0 1 4 5 8 9 203 208 209 304:306 308:309 408]);
