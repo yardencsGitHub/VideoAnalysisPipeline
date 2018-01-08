@@ -3,10 +3,10 @@
 %last_idx = 7982;
 %last_date = '2017_06_29';
 %last_time = '08_24_46';
-bird_name = 'lbr3022'; %'lrb85315';%
-bird_folder_name = 'lbr3022'; % 'lrb853_15';%
-template_file = 'lbr3022_template.mat'; %'lrb85315template';%
-annotation_file = 'lbr3022auto_annotation5.mat'; %'lrb85315auto_annotation5_fix';%
+bird_name = 'lrb85315';%'lbr3022'; %
+bird_folder_name = 'lrb853_15';%'lbr3022'; % 
+template_file = 'lrb85315template';%'lbr3022_template.mat'; %
+annotation_file = 'lrb85315auto_annotation5_fix';%'lbr3022auto_annotation5.mat'; %
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -65,7 +65,7 @@ for dayn = 1:numel(SubsetOfDays)
 
         cd(dates(loc,:)); % 2017_07_06;
         try
-            load(['baseROIdata_' keys{loc}(1:end-3) 'mat']); % lrb85315_8105_2017_07_06_05_37_56;
+            load(['NonoverlapBaseROIdata_' keys{loc}(1:end-3) 'mat']); % lrb85315_8105_2017_07_06_05_37_56;
         catch em
             if strcmp(dates(cnt,:),'2017_04_19')
                 continue;
@@ -73,8 +73,8 @@ for dayn = 1:numel(SubsetOfDays)
             tokens = regexp(keys{loc},'_','split');
             tokens{2} = num2str(str2num(tokens{2})); %sprintf('%04d',str2num(tokens{2}));
             fname = char(join(tokens,'_'));
-            [SUCCESS,MESSAGE,MESSAGEID] = movefile(['baseROIdata_' fname(1:end-3) 'mat'],['baseROIdata_' keys{loc}(1:end-3) 'mat']);
-            load(['baseROIdata_' keys{loc}(1:end-3) 'mat']);
+            [SUCCESS,MESSAGE,MESSAGEID] = movefile(['NonoverlapBaseROIdata_' fname(1:end-3) 'mat'],['NonoverlapBaseROIdata_' keys{loc}(1:end-3) 'mat']);
+            load(['NonoverlapBaseROIdata_' keys{loc}(1:end-3) 'mat']);
             display('fixed file name');
         end
 
