@@ -1,9 +1,27 @@
-%%
-global ignore_dates ignore_entries join_entries;
-ignore_dates = {'2017_04_19'};
-ignore_entries = [-1 100 102 101 103 202 406 408 409 402 403];
-join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
+function [results,syllables] = locate_roi_phrased_locked_activity_types(birdnum,ignore_dates,ignore_entries,join_entries,include_zero,edges)
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5'};
+switch birdnum
+    case 1
+        bird_params = bird1_params;
+    case 2
+        bird_params = bird2_params;
+    case 3
+end
+bird_name = bird_params{1}; % 'lrb85315'; %'lbr3022'; %
+bird_folder_name = bird_params{2}; %'lrb853_15'; %'lbr3022'; %
+template_file = bird_params{3}; %'lrb85315template'; %'lbr3022_template';%
+annotation_file = bird_params{4};
 
+if isempty(ignore_dates)
+    ignore_dates = {'2017_04_19'};
+end
+if isempty(ignore_entries)
+   ignore_entries = [-1 100 102 101 103 202 406 408 409 402 403];
+end
+if isempty(join_entries)
+    join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
+end
 
 clear results;
 zscoring_type = 0;
@@ -19,16 +37,21 @@ warp = 0;
 locktoonset = 1;
 mulcnt = 0.1;
 spikes = 2;
-edges = [0.1 0.1]; %[0.5 0.5];
+if isempty(edges)
+    edges = [0.1 0.1]; %[0.5 0.5];
+end
+if isempty(include_zero)
+    include_zero = 1;
+end
 opacity_factor = 0.4;
 max_phrase_gap = 0.5;
 
 
 %%
-bird_name = 'lrb85315';
-bird_folder_name = 'lrb853_15';
-template_file = 'lrb85315template';
-annotation_file = 'lrb85315auto_annotation5_fix';
+%bird_name = 'lrb85315';
+%bird_folder_name = 'lrb853_15';
+%template_file = 'lrb85315template';
+%annotation_file = 'lrb85315auto_annotation5_fix';
 CNMFEfolder = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/CNMF_E';
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -44,13 +67,21 @@ addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitH
 %%
 
 %syllables = [0:9 200:209 300:309 400:409 500];
-syllables = [0:9 200 201 203:208 300:306 308 400 401 404 500];
+
 cd (laptop_manualROI_folder);
-
-n_syllables = numel(syllables);
-
-
+syllables = []; %[0:9 200 201 203:208 300:306 308 400 401 404 500];
 load(annotation_file);
+for fnum = 1:numel(keys)  
+    syllables = unique([syllables unique(elements{fnum}.segType)']);
+end
+syllables = setdiff(syllables,ignore_entries);
+if (include_zero == 0)
+    syllables = setdiff(syllables,0);
+end
+for i = 1:numel(join_entries)
+    syllables = setdiff(syllables,join_entries{i}(2:end));
+end
+n_syllables = numel(syllables);
 ord = [];
 dates = [];
 for i = 1:numel(keys)
@@ -65,7 +96,8 @@ dates = dates(indx,:);
 unique_dates = datestr(setdiff(unique(datenum(dates)),datenum(ignore_dates)),'yyyy_mm_dd'); %does not include 04/19th (remove for other birds)
 
 %%
-
+map_states = [];
+dff = [];
 for Day_num = 1: size(unique_dates,1)
     results_max = [];
     results_max_before = [];
@@ -342,16 +374,16 @@ for Day_num = 1: size(unique_dates,1)
 end
 
 function element = trim_element(old_element)
-global ignore_dates ignore_entries join_entries;
+
     element = old_element;
-    locs = find(ismember(element.segType,ignore_entries));
-    element.segAbsStartTimes(locs) = [];
-    element.segFileStartTimes(locs) = [];
-    element.segFileEndTimes(locs) = [];
-    element.segType(locs) = [];  
+    trim_locs = find(ismember(element.segType,ignore_entries));
+    element.segAbsStartTimes(trim_locs) = [];
+    element.segFileStartTimes(trim_locs) = [];
+    element.segFileEndTimes(trim_locs) = [];
+    element.segType(trim_locs) = [];  
     for i = 1:numel(join_entries)
-        locs = find(ismember(element.segType,join_entries{i}));
-        element.segType(locs) = join_entries{i}(1);
+        join_locs = find(ismember(element.segType,join_entries{i}));
+        element.segType(join_locs) = join_entries{i}(1);
     end
 end
-
+end

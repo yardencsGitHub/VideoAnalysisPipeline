@@ -10,7 +10,7 @@
 % Leads to 30 phrase types
 
 %% Analysis - seek activity-centric correlations
-% look for phrases in which there is activity (hmm + high max)
+% 1. look for phrases in which there is activity (hmm + high max)
 % edges should be a parameter,
 % - check corr to durations and identity of next and previous phrases -
 % alert findings
@@ -22,3 +22,4 @@
 % (say 0.1) condition on transition and look for 2nd order correlations of
 % durations (for each 2nd order type) and of phrase type.
 % For each correlation .. create a figure of the curves and the statistics
+

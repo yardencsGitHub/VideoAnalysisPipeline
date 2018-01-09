@@ -33,8 +33,8 @@ hvc_offset = 0.04;
     
    
     %%
-    addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'));
-    addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'));
+    addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'),'-end');
+    addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'),'-end');
     bird_name = bird_params{1}; % 'lrb85315'; %'lbr3022'; %
     bird_folder_name = bird_params{2}; %'lrb853_15'; %'lbr3022'; %
     template_file = bird_params{3}; %'lrb85315template'; %'lbr3022_template';%
