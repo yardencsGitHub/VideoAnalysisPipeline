@@ -1,4 +1,10 @@
 %%
+global ignore_dates ignore_entries join_entries;
+ignore_dates = {'2017_04_19'};
+ignore_entries = [-1 100 102 101 103 202 406 408 409 402 403];
+join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
+
+
 clear results;
 zscoring_type = 0;
 delete_frames = 1;
@@ -13,8 +19,9 @@ warp = 0;
 locktoonset = 1;
 mulcnt = 0.1;
 spikes = 2;
-edges = [0.5 0.5]; %[0.5 0.5];
+edges = [0.1 0.1]; %[0.5 0.5];
 opacity_factor = 0.4;
+max_phrase_gap = 0.5;
 
 
 %%
@@ -32,10 +39,12 @@ laptop_annotated_images_dir = ['/Users/yardenc/Documents/Experiments/Imaging/Dat
 DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/too_large_or_damaged/'];
 laptop_manualROI_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/ManualROIs'];
 %%
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/BirdSongBout/BirdSongBout'),'-end');
 
+%%
 
-syllables = [0:9 200:209 300:309 400:409 500];
-
+%syllables = [0:9 200:209 300:309 400:409 500];
+syllables = [0:9 200 201 203:208 300:306 308 400 401 404 500];
 cd (laptop_manualROI_folder);
 
 n_syllables = numel(syllables);
@@ -53,12 +62,14 @@ end
 elements = elements(indx);
 keys = keys(indx);
 dates = dates(indx,:);
-unique_dates = datestr(setdiff(unique(datenum(dates)),736804),'yyyy_mm_dd'); %does not include 04/19th (remove for other birds)
+unique_dates = datestr(setdiff(unique(datenum(dates)),datenum(ignore_dates)),'yyyy_mm_dd'); %does not include 04/19th (remove for other birds)
 
 %%
 
 for Day_num = 1: size(unique_dates,1)
     results_max = [];
+    results_max_before = [];
+    results_max_after = [];
     results_min = [];
     results_std = [];
     results_std_in = [];
@@ -85,7 +96,8 @@ for Day_num = 1: size(unique_dates,1)
             fname = FILES{fnum};
             tokens = regexp(fname,'_','split');
             loc = find(locs == str2num(tokens{3}));
-            phrases = return_phrase_times(elements{loc});
+            phrases = return_phrase_times(trim_element(elements{loc})); %elements{loc}
+            phrases = deal_with_time_gaps(phrases,max_phrase_gap);
             if ismember(sylnum,phrases.phraseType)
                 %load(fname);
                 %s = [s; zscore(dff(ROIs,n_del_frames+1:end)')];
@@ -111,6 +123,8 @@ for Day_num = 1: size(unique_dates,1)
             sig_std_in = sig_integrals;
             sig_std_out = sig_integrals;
             sig_peak = sig_integrals;
+            sig_peak_before = sig_integrals;
+            sig_peak_after = sig_integrals;
             sig_bottom = sig_integrals;
             sig_hmm = sig_integrals;
             sig_hmm_time = sig_integrals;
@@ -124,7 +138,8 @@ for Day_num = 1: size(unique_dates,1)
                 fname = FILES{fnum};
                 tokens = regexp(fname,'_','split');
                 loc = find(locs == str2num(tokens{3}));
-                phrases = return_phrase_times(elements{loc});
+                phrases = return_phrase_times(trim_element(elements{loc}));
+                phrases = deal_with_time_gaps(phrases,max_phrase_gap);
                 %if ismember(sylnum,phrases.phraseType)
                 load(fname);
                 load(['GaussHmmMAP_' fname]);
@@ -161,8 +176,19 @@ for Day_num = 1: size(unique_dates,1)
 
                 tonset = phrases.phraseFileStartTimes(phrasenum);
                 toffset = phrases.phraseFileEndTimes(phrasenum);
+                flag_before = 0; flag_after = 0;
+                if (phrasenum > 1)
+                    tonset_before = phrases.phraseFileStartTimes(phrasenum - 1);
+                    toffset_before = phrases.phraseFileEndTimes(phrasenum - 1);
+                    flag_before = 1;
+                end
+                if (phrasenum < numel(phrases.phraseFileStartTimes))
+                    tonset_after = phrases.phraseFileStartTimes(phrasenum + 1);
+                    toffset_after = phrases.phraseFileEndTimes(phrasenum + 1);
+                    flag_after = 1;
+                end
+                
                 for roi_n = 1:size(dff,1)
-
 
                     if spikes < 2
                         [c, s, options] = deconvolveCa(detrend(y(roi_n,:)),'ar1',g,'method','constrained-foopsi');
@@ -210,6 +236,12 @@ for Day_num = 1: size(unique_dates,1)
                         (t >= (toffset+edges(2)))),0.1);
                     try
                         sig_peak(cnt,roi_n) = max(signal((t >= tonset) & (t <= toffset)));
+                        if (flag_before == 1)
+                            sig_peak_before(cnt,roi_n) = max(signal((t >= tonset_before) & (t <= toffset_before)));
+                        end
+                        if (flag_after == 1)
+                            sig_peak_after(cnt,roi_n) = max(signal((t >= tonset_after) & (t <= toffset_after)));
+                        end
                         sig_bottom(cnt,roi_n) = min(signal((t >= tonset) & (t <= toffset)));
                         sig_hmm(cnt,roi_n) = 1*(sum(map_path((t >= tonset) & ...
                         (t <= toffset))) >= min_num_active_bins);
@@ -225,6 +257,8 @@ for Day_num = 1: size(unique_dates,1)
                         active_times_off{roi_n} = [active_times_off{roi_n} (t(map_path == 1)-tonset)/(toffset-tonset)];
                     catch em
                         sig_peak(cnt,roi_n) = nan;
+                        sig_peak_before(cnt,roi_n) = nan;
+                        sig_peak_after(cnt,roi_n) = nan;
                         sig_bottom(cnt,roi_n) = nan;
                         sig_hmm(cnt,roi_n) = nan;
                         sig_hmm_out(cnt,roi_n) = nan;
@@ -248,6 +282,8 @@ for Day_num = 1: size(unique_dates,1)
             results_hist_off = {results_hist_off{:} cell2mat(n)};
          
             results_max = [results_max quantile(sig_peak,0.9,1)'];
+            results_max_before = [results_max_before quantile(sig_peak_before,0.9,1)'];
+            results_max_after = [results_max_after quantile(sig_peak_after,0.9,1)'];
             results_min = [results_min quantile(sig_bottom,0.1,1)'];
             results_std = [results_std nanstd(sig_peak - sig_bottom)'];
             results_std_in = [results_std_in nanmean(sig_std_in)'];
@@ -271,6 +307,8 @@ for Day_num = 1: size(unique_dates,1)
             results_ratio_std = [results_ratio_std nan*ones(size(dff,1),1)]; 
             results_ratio_max = [results_ratio_max nan*ones(size(dff,1),1)];
             results_max = [results_max nan*ones(size(dff,1),1)];
+            results_max_before = [results_max_before nan*ones(size(dff,1),1)];
+            results_max_after = [results_max_after nan*ones(size(dff,1),1)];
             results_min = [results_min nan*ones(size(dff,1),1)];
             results_std = [results_std nan*ones(size(dff,1),1)];
             results_std_in = [results_std_in nan*ones(size(dff,1),1)];
@@ -290,6 +328,8 @@ for Day_num = 1: size(unique_dates,1)
     results(Day_num).results_ratio_std = results_ratio_std;
     results(Day_num).Date = Day;
     results(Day_num).Max = results_max;
+    results(Day_num).Max_before = results_max_before;
+    results(Day_num).Max_after = results_max_after;
     results(Day_num).Min = results_min;
     results(Day_num).Std = results_std;
     results(Day_num).Std_in = results_std_in;
@@ -301,4 +341,17 @@ for Day_num = 1: size(unique_dates,1)
     results(Day_num).hist_rel = results_hist_off;
 end
 
+function element = trim_element(old_element)
+global ignore_dates ignore_entries join_entries;
+    element = old_element;
+    locs = find(ismember(element.segType,ignore_entries));
+    element.segAbsStartTimes(locs) = [];
+    element.segFileStartTimes(locs) = [];
+    element.segFileEndTimes(locs) = [];
+    element.segType(locs) = [];  
+    for i = 1:numel(join_entries)
+        locs = find(ismember(element.segType,join_entries{i}));
+        element.segType(locs) = join_entries{i}(1);
+    end
+end
 
