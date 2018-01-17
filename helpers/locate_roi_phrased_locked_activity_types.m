@@ -267,7 +267,7 @@ for Day_num = 1: size(unique_dates,1)
                         quantile(signal((t <= (tonset-edges(1))) | ...
                         (t >= (toffset+edges(2)))),0.1);
                     try
-                        sig_peak(cnt,roi_n) = max(signal((t >= tonset) & (t <= toffset)));
+                        sig_peak(cnt,roi_n) = max(signal((t >= tonset-edges(1)) & (t <= toffset+edges(2))));
                         if (flag_before == 1)
                             sig_peak_before(cnt,roi_n) = max(signal((t >= tonset_before) & (t <= toffset_before)));
                         end

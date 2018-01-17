@@ -1,4 +1,4 @@
-function [ax,r,p] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag)
+function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag)
 %% 
 % This script creates single ROI single day alignments to complex sequences
 % with only one variable (duration or syllable type)
@@ -24,6 +24,7 @@ function [ax,r,p] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_en
 %% change according to workstation
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
+display_opt = 0;
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation4'};
@@ -32,19 +33,19 @@ delete_frames = 1;
 n_del_frames = 6;
 hvc_offset = 0.04;
 mulcnt = 2;
-edges = [0 1.5];
+edges = [0.25 1];
 opacity_factor = 0.5;
 zscoring_type = 0;
-max_phrase_gap = 1.5;
+max_phrase_gap = 0.5;
 %%
-addpath(genpath([GithubDir 'small-utils']),'-end');
-addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
+%addpath(genpath([GithubDir 'small-utils']),'-end');
+%addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
 bird_name = bird_params{1}; 
 bird_folder_name = bird_params{2}; 
 template_file = bird_params{3}; 
 annotation_file = bird_params{4}; 
 CNMFEfolder = [GithubDir 'CNMF_E'];
-addpath(genpath(CNMFEfolder),'-end');
+%addpath(genpath(CNMFEfolder),'-end');
 
 %% Folders that contain data
 % Folders on laptop:
@@ -92,7 +93,7 @@ if isempty(ax)
     ax = axes;
 end
 %%
-AlphaNumeric = '[]ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+AlphaNumeric = '{}ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 target_sequence_str = '';
 cd (laptop_manualROI_folder);
 %load('syl_dur_gap_stat.mat');
@@ -146,20 +147,28 @@ for fnum = 1:numel(FILES)
         elements{loc}.segType(join_locs) = join_entries{i}(1);
     end
     phrases = return_phrase_times(elements{loc});
-    phrases = deal_with_time_gaps(phrases,max_phrase_gap);
+    try   
+        phrases = deal_with_time_gaps(phrases,max_phrase_gap);
+    catch em
+        'f';
+    end
     phrases_str = cell2mat(arrayfun(@(x)AlphaNumeric(syllables == x),phrases.phraseType','UniformOutput',false));
     phrase_durations = phrases.phraseFileEndTimes - phrases.phraseFileStartTimes;
     gap_durations = phrases.phraseFileStartTimes(2:end) - phrases.phraseFileEndTimes(1:end-1);
     
     
-    
-    endpoint = regexp(phrases_str,target_sequence_str,'end');
+    try
+        endpoint = regexp(phrases_str,target_sequence_str,'end');
+    catch em
+        endpoint = [];
+    end
     if ~isempty(endpoint)
         
         phrase_locs = endpoint - numel(target_sequence_str) + sylidx;
         
         for phrase_loc = 1:numel(phrase_locs)
             phrase_idx = endpoint(phrase_loc) - numel(target_sequence_str) + [1:numel(target_sequence_str)];
+            try
             if ~any(gap_durations(phrase_idx(1:end-1)) > max_phrase_gap)
             
                 phrasenum = phrase_locs(phrase_loc);
@@ -174,18 +183,26 @@ for fnum = 1:numel(FILES)
                 end
                 sequence_durations = [sequence_durations; phrase_durations(phrase_idx)];
             end
+            catch em
+                '4';
+            end
             
         end
     end
 end
 
-if sort_type == 1
-    [durations,dur_idx] = sort(durations);
-else
-    [durations,dur_idx] = sort(hits(:,3 - order_flag));
+try 
+    if sort_type == 1
+        [durations,dur_idx] = sort(durations);
+    else
+        [durations,dur_idx] = sort(hits(:,3 - order_flag));
+    end
+    hits = hits(dur_idx,:);
+catch em
+    'f';
+    p=1; r=0; gnames=''; return;
 end
 
-hits = hits(dur_idx,:);
 
 %%
 
@@ -250,7 +267,9 @@ for cnt = 1:size(hits,1)
     tonset = phrases.phraseFileStartTimes(phrasenum);
     toffset = phrases.phraseFileEndTimes(phrasenum);
     com_edge = (tonset - edges(1))*locktoonset + (toffset + edges(2))*(1-locktoonset);
-    display([num2str([cnt tonset]) ' ' fname]);
+    if (display_opt)
+        display([num2str([cnt tonset]) ' ' fname]);
+    end
     sig_integrals_in = [sig_integrals_in; ...
                 sum(signal((t >= tonset-edges(1)) & (t <= toffset+edges(2))))];
     sig_integrals_before = [sig_integrals_before; ...
@@ -298,41 +317,49 @@ for cnt = 1:size(hits,1)
 end
 r=[]; p=[];
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
-'6'; 
-if sort_type ~= 1 
-    [p,ANOVATAB,STATS] = anova1(sig_integrals_in,durations);
-
+if ~isempty(durations)
+    if sort_type ~= 1 
+        [p,ANOVATAB,STATS] = anova1(sig_integrals_in,durations);
+        r = ANOVATAB{2,5};
+        gnames = STATS.gnames;
+    else    
+        [r, p] = corr(durations,sig_integrals_in); 
+        gnames = figure('Visible','off'); plot(durations,sig_integrals_in,'bo','MarkerSize',10,'MarkerFaceColor','b','MarkerEdgeColor','none');
+        set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral')
+    end
 else
-    [r, p] = corr(durations,sig_integrals_in);
-    figure; plot(durations,sig_integrals_in,'bo','MarkerSize',10,'MarkerFaceColor','b','MarkerEdgeColor','none');
-    set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral')
+    p = 1; r = 0; gnames = 0;
 end
 %set(ax,'CameraTarget', [1 36 0.2605]);
 end
 
-function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
-    new_phrases.phraseType = [-1000; phrases.phraseType(1)];
-    new_phrases.phraseFileStartTimes = [phrases.phraseFileStartTimes(1) - 1, ...
-        phrases.phraseFileStartTimes(1)];
-    new_phrases.phraseFileEndTimes = [phrases.phraseFileStartTimes(1) - 0.001, ...
-        phrases.phraseFileEndTimes(1)];
-    
-    for temp_cnt = 2:numel(phrases.phraseType)
-        curr_gap = (phrases.phraseFileStartTimes(temp_cnt) - phrases.phraseFileEndTimes(temp_cnt-1));
-        if (curr_gap > max_phrase_gap) 
-            new_phrases.phraseType = [new_phrases.phraseType; -1000; 1000];
-            new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileEndTimes(temp_cnt - 1)+0.001 ...
-                phrases.phraseFileStartTimes(temp_cnt) - min(0.005,curr_gap/10)];
-            new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(temp_cnt - 1)+min(0.005,curr_gap/10) ...
-                phrases.phraseFileStartTimes(temp_cnt) - 0.001];
-        end
-        new_phrases.phraseType = [new_phrases.phraseType; phrases.phraseType(temp_cnt)];
-        new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileStartTimes(temp_cnt)];
-        new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(temp_cnt)];
-               
-    end
-    new_phrases.phraseType = [new_phrases.phraseType; 1000];
-    new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileEndTimes(end) + 0.001];
-    new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(end) + 1];
-end 
+% function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
+%     if isempty(phrases.phraseType)
+%         new_phrases = phrases;
+%         return;
+%     end
+%     new_phrases.phraseType = [-1000; phrases.phraseType(1)];
+%     new_phrases.phraseFileStartTimes = [phrases.phraseFileStartTimes(1) - 1, ...
+%         phrases.phraseFileStartTimes(1)];
+%     new_phrases.phraseFileEndTimes = [phrases.phraseFileStartTimes(1) - 0.001, ...
+%         phrases.phraseFileEndTimes(1)];
+%     
+%     for temp_cnt = 2:numel(phrases.phraseType)
+%         curr_gap = (phrases.phraseFileStartTimes(temp_cnt) - phrases.phraseFileEndTimes(temp_cnt-1));
+%         if (curr_gap > max_phrase_gap) 
+%             new_phrases.phraseType = [new_phrases.phraseType; 1000; -1000];
+%             new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileEndTimes(temp_cnt - 1)+0.001 ...
+%                 phrases.phraseFileStartTimes(temp_cnt) - min(0.005,curr_gap/10)];
+%             new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(temp_cnt - 1)+min(0.005,curr_gap/10) ...
+%                 phrases.phraseFileStartTimes(temp_cnt) - 0.001];
+%         end
+%         new_phrases.phraseType = [new_phrases.phraseType; phrases.phraseType(temp_cnt)];
+%         new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileStartTimes(temp_cnt)];
+%         new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(temp_cnt)];
+%                
+%     end
+%     new_phrases.phraseType = [new_phrases.phraseType; 1000];
+%     new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileEndTimes(end) + 0.001];
+%     new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(end) + 1];
+% end 
 
