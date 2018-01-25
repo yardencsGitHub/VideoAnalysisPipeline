@@ -166,14 +166,65 @@ join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
 %% 4 look for phrases in which there is activity (hmm + high max) 
 % AND go over transition types (with occurance > 0.1) WITH IDENTICAL FLANKERS and correlated to
 % prev/post phrase durations. This is done with the 2nd order transition probabilities 
-targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PostDurationVsSignal';
+% targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PostDurationVsSignal';
+% signal_thr = 0.1;
+% hmm_thr = 0.1;
+% clc;
+% display('Signal relation to previous phrase:');
+% for daynum = 1:numel(results)
+%     for roinum = 1:size(results(daynum).Max,1)
+%         vec = find((results(daynum).Max(roinum,:) >= results(daynum).Max_after(roinum,:)).*(results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+%         for syl = 1:numel(vec)
+%             sylnum = syllables(vec(syl));
+%             % previous phrase type
+%             prev_types = find(resmat(:,state_labels == sylnum) >= 0.1);   
+%             %prev_types = setdiff(prev_types,1);
+%             for prev_cnt = 1:numel(prev_types)
+%                 prev_sylnum = state_labels(prev_types(prev_cnt));
+%                 post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.1);
+%                 
+%                 for post_cnt = 1:numel(post_types)
+%                     post_sylnum = state_labels(post_types(post_cnt));
+%                     h=figure('Position',[360    61   560   637],'Visible','off');
+%                     ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[3]);
+%                     if p<0.05
+%                         f = gnames;
+%                         h1 = get(ax,'Parent');
+%                         fx = get(f,'Children');
+%                         figure(h1);
+%                         h2 = subplot(2,1,2);
+%                         c = copyobj(get(fx,'Children'),h2);
+%                         set(h2,'FontSize',16);
+%                         title(['Pearson: r =' num2str(r) ', p = ' num2str(p)]);
+% 
+%                         display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
+%                             num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
+%                         outputfilename = fullfile(targetdir,['signal2post_duration_pearson_Date_' results(daynum).Date ...
+%                             '-roi' num2str(roinum) '-syllables ' ...
+%                             num2str(prev_sylnum) '-->' num2str(sylnum) '-->' num2str(post_sylnum) '.png']);
+%                         saveas(h,outputfilename);
+%                     end
+%                     close all;
+%                 end
+%             end
+%         end
+%     end
+% end
+
+
+%% 5 STAT correction look for phrases in which there is activity (hmm + high max) 
+% AND go over transition types (with occurance > 0.1) WITH IDENTICAL FLANKERS and correlated to
+% prev/post phrase durations. This is done with the 2nd order transition probabilities.
+% USE RESIDUALS (change is made in
+% LongRangeLockedSingleDayManualROIs_function.m
+targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PrevDurationVsSignal';
 signal_thr = 0.1;
 hmm_thr = 0.1;
 clc;
 display('Signal relation to previous phrase:');
 for daynum = 1:numel(results)
     for roinum = 1:size(results(daynum).Max,1)
-        vec = find((results(daynum).Max(roinum,:) >= results(daynum).Max_after(roinum,:)).*(results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        vec = find((results(daynum).Max(roinum,:) >= results(daynum).Max_before(roinum,:)).*(results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
@@ -186,7 +237,7 @@ for daynum = 1:numel(results)
                 for post_cnt = 1:numel(post_types)
                     post_sylnum = state_labels(post_types(post_cnt));
                     h=figure('Position',[360    61   560   637],'Visible','off');
-                    ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[3]);
+                    ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[1]);
                     if p<0.05
                         f = gnames;
                         h1 = get(ax,'Parent');
@@ -199,7 +250,7 @@ for daynum = 1:numel(results)
 
                         display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                             num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                        outputfilename = fullfile(targetdir,['signal2post_duration_pearson_Date_' results(daynum).Date ...
+                        outputfilename = fullfile(targetdir,['STAT_signal2prev_duration_pearson_Date_' results(daynum).Date ...
                             '-roi' num2str(roinum) '-syllables ' ...
                             num2str(prev_sylnum) '-->' num2str(sylnum) '-->' num2str(post_sylnum) '.png']);
                         saveas(h,outputfilename);

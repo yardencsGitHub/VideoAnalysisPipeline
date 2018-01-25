@@ -2,7 +2,7 @@
 %%
 maxdiff = 0.005;
 
-addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'));
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/VideoAnalysisPipeline'),'-end');
 cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav');
 
 annotation_file = 'lrb85315auto_annotation5.mat';

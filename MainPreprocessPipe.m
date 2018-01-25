@@ -4,9 +4,14 @@ last_idx = 0;
 init_idx = 0;
 last_date = '2017_02_29';
 last_time = '00_00_00';
-
-bird_name = 'lbr3022'; %'lbr3009'; %'lrb85315';
-bird_folder_name = 'lbr3022';%'lbr3009'; %'lrb853_15';
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation4'};
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009_annotation_4TF'};
+bird_params = bird3_params;
+bird_name = bird_params{1}; 
+bird_folder_name = bird_params{2}; 
+template_file = bird_params{3}; 
+annotation_file = bird_params{4}; 
 
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
@@ -99,15 +104,15 @@ Prepare_Raw_Video_Audio;
 % Needs fixing: create_annotation_from_auto_addition 
 DIR = laptop_wav_folder; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav';
 annDIR = laptop_annotated_dir;
-auto_file = 'Results_Oct_06_2017.mat';
-old_annotation_file = 'lbr3022auto_annotation5';
+auto_file = 'Results_Jan18_177files.mat';
+old_annotation_file = annotation_file; %'lbr3022auto_annotation5';
 new_annotation_file = 'lbr3022auto_annotation5'; %'lbr3022auto_annotation3';
-template_file = 'lbr3022_template.mat';
+%template_file = 'lbr3022_template.mat';
 %%
 corrections = 0; % a flag that indicates that we're going to reopen old annotations and replace some syllables' annotation
 isnew = 1; % a flag that indicates if this is the first time we annotate files from this bird
 syllables_to_reannotate = []; %  Theses syllables in the old files will trigger reannotation
-trill_syllables = [0:4 8 9 204 206 207 300 301 304];
+trill_syllables = [];%[0:4 8 9 204 206 207 300 301 304];
 copyfile(fullfile(laptop_mov_folder,'FS_movies_list.mat'),fullfile(laptop_wav_folder,'FS_movies_list.mat'));
 create_annotation_from_auto_addition;
 if ~isnew

@@ -25,6 +25,7 @@ function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ig
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
 display_opt = 0;
+use_residuals = 1;
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation4'};
@@ -33,19 +34,19 @@ delete_frames = 1;
 n_del_frames = 6;
 hvc_offset = 0.04;
 mulcnt = 2;
-edges = [0.25 1];
+edges = [2 0.25];
 opacity_factor = 0.5;
 zscoring_type = 0;
 max_phrase_gap = 0.5;
 %%
-%addpath(genpath([GithubDir 'small-utils']),'-end');
+addpath(genpath([GithubDir 'small-utils']),'-end');
 %addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
 bird_name = bird_params{1}; 
 bird_folder_name = bird_params{2}; 
 template_file = bird_params{3}; 
 annotation_file = bird_params{4}; 
 CNMFEfolder = [GithubDir 'CNMF_E'];
-%addpath(genpath(CNMFEfolder),'-end');
+addpath(genpath(CNMFEfolder),'-end');
 
 %% Folders that contain data
 % Folders on laptop:
@@ -132,6 +133,7 @@ FILES = {FILES.name};
 hits = [];
 max_syls = 0;
 durations = [];
+sylidx_durations = [];
 sequence_durations = [];
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
@@ -178,8 +180,11 @@ for fnum = 1:numel(FILES)
                 elements{loc}.segFileStartTimes <= toffset);
                 max_syls = max(max_syls,numel(syls_in_phrase));
                 hits = [hits; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1)) phrases.phraseType(phrase_idx)'];
+                sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(sylidx)) tonset toffset];
                 if sort_type == 1
                     durations = [durations; sum(phrase_durations(phrase_idx(order_flag.*(order_flag > 0))))];
+                else
+                    durations = [durations; sum(phrase_durations(phrase_idx(sylidx)))];
                 end
                 sequence_durations = [sequence_durations; phrase_durations(phrase_idx)];
             end
@@ -195,9 +200,11 @@ try
     if sort_type == 1
         [durations,dur_idx] = sort(durations);
     else
-        [durations,dur_idx] = sort(hits(:,3 - order_flag));
+        [id_flags,dur_idx] = sort(hits(:,3 - order_flag));
+        durations = durations(dur_idx);
     end
     hits = hits(dur_idx,:);
+    sylidx_durations = sylidx_durations(dur_idx,:);
 catch em
     'f';
     p=1; r=0; gnames=''; return;
@@ -318,21 +325,41 @@ end
 r=[]; p=[];
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
 if ~isempty(durations)
+    if use_residuals == 1
+        sig_integrals_in = linear_res(sig_integrals_in,sylidx_durations(:,1));
+    end
     if sort_type ~= 1 
-        [p,ANOVATAB,STATS] = anova1(sig_integrals_in,durations);
+        [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
         r = ANOVATAB{2,5};
         gnames = STATS.gnames;
+        [pp,ANOVATAB,STATS] = anova1(durations,id_flags);
+        
     else    
         [r, p] = corr(durations,sig_integrals_in); 
         gnames = figure('Visible','off'); plot(durations,sig_integrals_in,'bo','MarkerSize',10,'MarkerFaceColor','b','MarkerEdgeColor','none');
-        set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral')
+        set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral'); title(['(r,p) = ' num2str([r,p])]);
+%         [r1, p1] = corr(durations,sylidx_durations(:,1)); 
+%         figure('Visible','on'); plot(durations,sylidx_durations(:,1),'ro','MarkerSize',10,'MarkerFaceColor','r','MarkerEdgeColor','none');
+%         set(gca,'FontSize',16); xlabel('Durations'); ylabel('idx durations'); title(['(r,p) = ' num2str([r1,p1])]);
+%         [r1, p1] = corr(sig_integrals_in,sylidx_durations(:,2)); 
+%         figure('Visible','on'); plot(durations,sylidx_durations(:,2),'mo','MarkerSize',10,'MarkerFaceColor','m','MarkerEdgeColor','none');
+%         set(gca,'FontSize',16); xlabel('sig.integral'); ylabel('onset'); title(['(r,p) = ' num2str([r1,p1])]);
+        
     end
 else
     p = 1; r = 0; gnames = 0;
 end
 %set(ax,'CameraTarget', [1 36 0.2605]);
-end
 
+end
+function resid = linear_res(vec_a,vec_b)
+    % returns the residuals of vec_a after removing the linear component of
+    % vec_b
+    tmpcov = cov(vec_a,vec_b,1);
+    beta = tmpcov(1,2)/var(vec_b,1);
+    alpha = mean(vec_a) - beta*mean(vec_b);
+    resid = vec_a - alpha - beta*vec_b;
+end
 % function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
 %     if isempty(phrases.phraseType)
 %         new_phrases = phrases;
