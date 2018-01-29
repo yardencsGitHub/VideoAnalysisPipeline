@@ -7,7 +7,7 @@ last_time = '00_00_00';
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation4'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009_annotation_4TF'};
-bird_params = bird3_params;
+bird_params = bird2_params;
 bird_name = bird_params{1}; 
 bird_folder_name = bird_params{2}; 
 template_file = bird_params{3}; 
@@ -152,10 +152,15 @@ add_annotation_to_mat(pwd,temporary_annotation,new_template_file);
 % Use TweetVisionLite to fix mistakes
 startfrom = init_idx+1;
 targetdir = laptop_annotated_images_dir; %'/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav/annotated/images';
-template_file = 'lbr3022_template.mat'; %'lrb85315template'; %
+%template_file = 'lbr3022_template.mat'; %'lrb85315template'; %
 cd(laptop_wav_folder);
 load(template_file);
 syllables = [[templates.wavs.segType] 101 -1 307];
+dates_to_process = datenum({'2017_05_30' '2017_06_05' '2017_06_06' '2017_06_08' '2017_06_14' '2017_06_15' ...
+    '2017_06_16' '2017_06_19' '2017_06_20' '2017_06_21' '2017_06_22' '2017_06_23' '2017_06_24' '2017_06_25' '2017_06_26' ...
+    '2017_06_27' '2017_07_03' '2017_07_04'});
+
+limit_dates = 1; % set to 1 to make 'show_spec_and_phrases' work only on the subset of dates in 'dates_to_process'
 show_spec_and_phrases;
 %% 8. Create Maximum projection images and movies (Desktop)
 % Create the maximum, background subtracted, projection for each song movie

@@ -20,20 +20,25 @@ freq_min = 300; freq_max = 8000;
 colors = distinguishable_colors(n_syllables);
 
 ord = [];
+dates = [];
 for i = 1:numel(keys)
     tokens = regexp(keys{i},'_','split');
     ord = [ord; str2num(tokens{2})];
+    dates = [dates; char(join(tokens(3:5),'_'))];
 end
 [locs,indx] = sort(ord);
 elements = elements(indx);
 keys = keys(indx);
+dates = dates(indx,:);
 
 startloc = min(find(locs >= startfrom));
 
 %%
 startloc;
-for fnum = 1834:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
-
+for fnum = 1:numel(keys) %ceil(0.75*numel(keys)):numel(keys)
+    if (limit_dates == 1) & ~ismember(datenum(dates(fnum,:)),dates_to_process)
+        continue;
+    end
     matfile = [keys{fnum}(1:end-3) 'mat'];
     load(matfile);
     

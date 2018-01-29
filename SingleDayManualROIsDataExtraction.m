@@ -3,19 +3,29 @@
 % from it. Then, it creates ROI annotation image, and calculates all ROI 
 % extracted dff data from that day to be saved in per-day folders.
 % it also creates folders for the images
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009_annotation_4TF'};
+bird_params = bird2_params;
+bird_name = bird_params{1}; 
+bird_folder_name = bird_params{2}; 
+template_file = bird_params{3}; 
+annotation_file = bird_params{4}; 
 
 last_idx = 0;
 init_idx = 0;
 last_date = '2017_02_29';
 last_time = '00_00_00';
-bird_name = 'lrb85315'; %'lbr3009';
-bird_folder_name = 'lrb853_15'; % 'lbr3009';
+%bird_name = 'lrb85315'; %'lbr3009';
+%bird_folder_name = 'lrb853_15'; % 'lbr3009';
 
 % Folders on Data desktop:
-bird_name = 'lrb85315';
-bird_folder_name = 'lrb853_15';
-template_file = 'lrb85315template';
-annotation_file = 'lrb85315auto_annotation5_fix';
+%bird_name = 'lrb85315';
+%bird_folder_name = 'lrb853_15';
+%template_file = 'lrb85315template';
+%annotation_file = 'lrb85315auto_annotation5_fix';
+
+
 
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];

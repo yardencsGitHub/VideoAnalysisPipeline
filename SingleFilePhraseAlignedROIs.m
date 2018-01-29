@@ -3,10 +3,16 @@
 %last_idx = 7982;
 %last_date = '2017_06_29';
 %last_time = '08_24_46';
-bird_name = 'lrb85315';%'lbr3022'; %
-bird_folder_name = 'lrb853_15';%'lbr3022'; % 
-template_file = 'lrb85315template';%'lbr3022_template.mat'; %
-annotation_file = 'lrb85315auto_annotation5_fix';%'lbr3022auto_annotation5.mat'; %
+raw_data_prefix = 'BaseROIdata_'; %'NonoverlapBaseROIdata_'
+
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009_annotation_4TF'};
+bird_params = bird2_params;
+bird_name = bird_params{1}; 
+bird_folder_name = bird_params{2}; 
+template_file = bird_params{3}; 
+annotation_file = bird_params{4}; 
 % Folders on laptop:
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -65,7 +71,7 @@ for dayn = 1:numel(SubsetOfDays)
 
         cd(dates(loc,:)); % 2017_07_06;
         try
-            load(['NonoverlapBaseROIdata_' keys{loc}(1:end-3) 'mat']); % lrb85315_8105_2017_07_06_05_37_56;
+            load([raw_data_prefix keys{loc}(1:end-3) 'mat']); % lrb85315_8105_2017_07_06_05_37_56;
         catch em
             if strcmp(dates(cnt,:),'2017_04_19')
                 continue;
@@ -73,8 +79,8 @@ for dayn = 1:numel(SubsetOfDays)
             tokens = regexp(keys{loc},'_','split');
             tokens{2} = num2str(str2num(tokens{2})); %sprintf('%04d',str2num(tokens{2}));
             fname = char(join(tokens,'_'));
-            [SUCCESS,MESSAGE,MESSAGEID] = movefile(['NonoverlapBaseROIdata_' fname(1:end-3) 'mat'],['NonoverlapBaseROIdata_' keys{loc}(1:end-3) 'mat']);
-            load(['NonoverlapBaseROIdata_' keys{loc}(1:end-3) 'mat']);
+            [SUCCESS,MESSAGE,MESSAGEID] = movefile([raw_data_prefix fname(1:end-3) 'mat'],[raw_data_prefix keys{loc}(1:end-3) 'mat']);
+            load([raw_data_prefix keys{loc}(1:end-3) 'mat']);
             display('fixed file name');
         end
 
