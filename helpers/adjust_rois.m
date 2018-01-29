@@ -78,12 +78,17 @@ for dirnum = 1:numel(dirs)
 end
 %% 3. create an image of a specific roi map (for examples)
 mask = zeros(480,640);
+nrows = 480;
+textlocs = [];
 for roi_n = 1:numel(ROI.coordinates)
    
     mask(ROI.coordinates{roi_n}(:,1)*nrows+ROI.coordinates{roi_n}(:,2))=roi_n;
+    textlocs = [textlocs; mean(ROI.coordinates{roi_n}(:,1)) mean(ROI.coordinates{roi_n}(:,2))];
 end
-figure; imagesc(mask)
-
+figure; imagesc(mask); hold on;
+for roi_n = 1:numel(ROI.coordinates)
+    text(textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',16,'HorizontalAlignment','center');
+end
 %% 4. Delete df/f files with a defined prefix (to get rid of old attempts)
 prefix = 'testROIdata';
 cd('/Users/yardenc/Documents/Experiments/Imaging/CanaryData/lrb853_15/ManualROIs/ROIdata');
