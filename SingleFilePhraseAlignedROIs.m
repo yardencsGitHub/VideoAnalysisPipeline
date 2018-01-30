@@ -3,7 +3,7 @@
 %last_idx = 7982;
 %last_date = '2017_06_29';
 %last_time = '08_24_46';
-raw_data_prefix = 'BaseROIdata_'; %'NonoverlapBaseROIdata_'
+raw_data_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'
 
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
@@ -36,7 +36,7 @@ addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitH
 addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/small-utils'),'-end');
 cd (laptop_manualROI_folder);
 load(template_file);
-syllables = [[templates.wavs.segType] -1]; %[[templates.wavs.segType] 305 -1 100 101]; %
+syllables = [[templates.wavs.segType] -1 100 101]; %[[templates.wavs.segType] 305 -1 100 101]; %
 load(annotation_file); 
 ord = [];
 dates = [];
@@ -52,10 +52,11 @@ dates = dates(indx,:);
 unique_dates = unique(datenum(dates));
 cd ROIdata;
 %%
-SubsetOfDays = {'2017_05_11' '2017_05_15' '2017_05_25' '2017_05_30' ...
-    '2017_06_05' '2017_06_06' '2017_06_08' '2017_06_14' '2017_06_15' ...
-    '2017_06_16' '2017_06_19' '2017_06_20' '2017_06_21' '2017_06_22' '2017_06_23' ...
-    '2017_06_24' '2017_06_25' '2017_06_26' '2017_07_03' '2017_07_04'};
+% '2017_05_11' '2017_05_15' '2017_05_25' '2017_05_30' ...
+%     '2017_06_05' '2017_06_06' '2017_06_08' '2017_06_14' '2017_06_15' ...
+%     '2017_06_16' '2017_06_19' '2017_06_20' '2017_06_21' '2017_06_22' '2017_06_23' ...
+%     '2017_06_24' '2017_06_25'
+SubsetOfDays = { '2017_06_26' '2017_07_03' '2017_07_04'};
 %Day = '2017_06_15';
 %SubsetOfDays = mat2cell(datestr(unique_dates,'yyyy_mm_dd'),ones(1,numel(unique_dates)),10);
 for dayn = 1:numel(SubsetOfDays)

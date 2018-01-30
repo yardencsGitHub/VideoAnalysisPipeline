@@ -26,15 +26,16 @@ BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
 display_opt = 0;
 use_residuals = 1;
+file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata';
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
-bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation4'};
-bird_params = bird1_params;
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
+bird_params = bird2_params;
 delete_frames = 1;
 n_del_frames = 6;
 hvc_offset = 0.04;
 mulcnt = 2;
-edges = [2 0.25];
+edges = [0.25 0.25];
 opacity_factor = 0.5;
 zscoring_type = 0;
 max_phrase_gap = 0.5;
@@ -99,8 +100,8 @@ target_sequence_str = '';
 cd (laptop_manualROI_folder);
 %load('syl_dur_gap_stat.mat');
 load(template_file);
-syllables = [[templates.wavs.segType] -1 102 103];
-%syllables = [templates.wavs.segType];
+%syllables = [[templates.wavs.segType] -1 102 103];
+syllables = [templates.wavs.segType];
 syllables = [[-1000 1000] syllables setdiff([-1 102 103],syllables)];
 n_syllables = numel(syllables)-2;
 for cnt = 1:numel(syllabels_sequence)
@@ -128,7 +129,7 @@ keys = keys(indx);
 dates = dates(indx,:);
 %%
 cd([laptop_manualROI_folder '/ROIdata/' Day]);
-FILES = dir('NonoverlapBaseROIdata*.mat');
+FILES = dir([file_prefix bird_name '*.mat']);
 FILES = {FILES.name};
 hits = [];
 max_syls = 0;
@@ -138,8 +139,14 @@ sequence_durations = [];
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
+   
     loc = find(locs == str2num(tokens{3}));
-    ignore_locs = find(ismember(elements{loc}.segType,ignore_entries));
+    
+    try
+        ignore_locs = find(ismember(elements{loc}.segType,ignore_entries));
+    catch eem
+        continue;
+    end
     elements{loc}.segAbsStartTimes(ignore_locs) = [];
     elements{loc}.segFileStartTimes(ignore_locs) = [];
     elements{loc}.segFileEndTimes(ignore_locs) = [];
