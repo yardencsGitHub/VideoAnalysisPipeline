@@ -217,49 +217,175 @@ join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
 % prev/post phrase durations. This is done with the 2nd order transition probabilities.
 % USE RESIDUALS (change is made in
 % LongRangeLockedSingleDayManualROIs_function.m
-targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PrevDurationVsSignal';
+% targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PrevDurationVsSignal';
+% signal_thr = 0.1;
+% hmm_thr = 0.1;
+% clc;
+% display('Signal relation to previous phrase:');
+% for daynum = 1:numel(results)
+%     for roinum = 1:size(results(daynum).Max,1)
+%         vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+%         %(results(daynum).Max(roinum,:) <= results(daynum).Max_before(roinum,:)).*
+%         for syl = 1:numel(vec)
+%             sylnum = syllables(vec(syl));
+%             % previous phrase type
+%             prev_types = find(resmat(:,state_labels == sylnum) >= 0.1);   
+%             %prev_types = setdiff(prev_types,1);
+%             for prev_cnt = 1:numel(prev_types)
+%                 prev_sylnum = state_labels(prev_types(prev_cnt));
+%                 post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.1);
+%                 
+%                 for post_cnt = 1:numel(post_types)
+%                     post_sylnum = state_labels(post_types(post_cnt));
+%                     h=figure('Position',[360    61   560   637],'Visible','off');
+%                     ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[1]);
+%                     if p<0.05
+%                         f = gnames;
+%                         h1 = get(ax,'Parent');
+%                         fx = get(f,'Children');
+%                         figure(h1);
+%                         h2 = subplot(2,1,2);
+%                         c = copyobj(get(fx,'Children'),h2);
+%                         set(h2,'FontSize',16);
+%                         title(['Pearson: r =' num2str(r) ', p = ' num2str(p)]);
+% 
+%                         display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
+%                             num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
+%                         outputfilename = fullfile(targetdir,['STAT_signal2prev_duration_pearson_Date_' results(daynum).Date ...
+%                             '-roi' num2str(roinum) '-syllables ' ...
+%                             num2str(prev_sylnum) '-->' num2str(sylnum) '-->' num2str(post_sylnum) '.png']);
+%                         saveas(h,outputfilename);
+%                     end
+%                     close all;
+%                 end
+%             end
+%         end
+%     end
+% end
+%    
+%% 6 STAT correction look for phrases in which there is activity (hmm + high max) 
+% AND go over transition types (with occurance > 0.1) WITH IDENTICAL FLANKERS and correlated to
+% 2nd post phrase durations. This is done with the 2nd order transition probabilities.
+% USE RESIDUALS (change is made in
+% LongRangeLockedSingleDayManualROIs_function.m
+% targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/Post2ndDurationVsSignal';
+% signal_thr = 0.1;
+% hmm_thr = 0.1;
+% clc;
+% display('Signal relation to 2nd post phrase duration:');
+% for daynum = 1:numel(results)
+%     for roinum = 1:size(results(daynum).Max,1)
+%         vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+%         %(results(daynum).Max(roinum,:) <= results(daynum).Max_before(roinum,:)).*
+%         for syl = 1:numel(vec)
+%             sylnum = syllables(vec(syl));
+%             % previous phrase type
+%             post1_types = find(resmat(state_labels == sylnum,:) >= 0.1);   
+%             %prev_types = setdiff(prev_types,1);
+%             for post1_cnt = 1:numel(post1_types)
+%                 post1_sylnum = state_labels(post1_types(post1_cnt));
+%                 post2_types = find(trans2(state_labels == sylnum,state_labels == post1_sylnum,:) >= 0.1);
+%                 
+%                 for post_cnt = 1:numel(post2_types)
+%                     post2_sylnum = state_labels(post2_types(post_cnt));
+%                     h=figure('Position',[360    61   560   637],'Visible','off');
+%                     ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,1,[sylnum post1_sylnum post2_sylnum],roinum,1,0,[3]);
+%                     if p<0.05
+%                         f = gnames;
+%                         h1 = get(ax,'Parent');
+%                         fx = get(f,'Children');
+%                         figure(h1);
+%                         h2 = subplot(2,1,2);
+%                         c = copyobj(get(fx,'Children'),h2);
+%                         set(h2,'FontSize',16);
+%                         title(['Pearson: r =' num2str(r) ', p = ' num2str(p)]);
+% 
+%                         display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
+%                             num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
+%                         outputfilename = fullfile(targetdir,['STAT_signal2post2nd_duration_pearson_Date_' results(daynum).Date ...
+%                             '-roi' num2str(roinum) '-syllables ' ...
+%                             num2str(sylnum) '-->' num2str(post1_sylnum) '-->' num2str(post2_sylnum) '.png']);
+%                         saveas(h,outputfilename);
+%                     end
+%                     close all;
+%                 end
+%             end
+%         end
+%     end
+% end
+
+%% 7 look for sustained activity - consecutive phrases in which there is activity (hmm + high max) 
+% AND go over transition types (with occurance > 0.1) WITH IDENTICAL FLANKERS . This is done with the 2nd order transition probabilities.
+% cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs');
+% load results2018_01_15; % contains the transition statistics and state, syllable variables
+% targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/Sustained';
+% signal_thr = 0.1;
+% hmm_thr = 0.1;
+% clc;
+% display('Sustained Signals:');
+% for daynum = 1:numel(results)
+%     for roinum = 1:size(results(daynum).Max,1)
+%         vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr).*...
+%             (results(daynum).Max_before(roinum,:) >= signal_thr).*(results(daynum).Max_after(roinum,:) >= signal_thr));
+%             for syl = 1:numel(vec)
+%                 sylnum = syllables(vec(syl));
+%                 h=figure('Position',[360    61   560   637],'Visible','off');
+%                 ax = axes; [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,1,[nan sylnum nan],roinum,1,0,[2]);
+%                 display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
+%                             num2str(sylnum) ', sustained' ]);
+%                 outputfilename = fullfile(targetdir,['Sustained_duration_pearson_Date_' results(daynum).Date ...
+%                             '-roi' num2str(roinum) '-syllable ' ...
+%                             num2str(sylnum) '.png']);
+%                 saveas(h,outputfilename);
+%             
+%                 close all;
+%             end
+%         
+%     end
+% end
+        
+%% 8 sustained in a different way
+cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs');
+load results2018_01_15; % contains the transition statistics and state, syllable variables
+targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/Sustained';
 signal_thr = 0.1;
 hmm_thr = 0.1;
 clc;
-display('Signal relation to previous phrase:');
+display('Sustained Signals:');
 for daynum = 1:numel(results)
     for roinum = 1:size(results(daynum).Max,1)
-        vec = find((results(daynum).Max(roinum,:) >= results(daynum).Max_before(roinum,:)).*(results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        %(results(daynum).Max(roinum,:) <= results(daynum).Max_before(roinum,:)).*
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
-            prev_types = find(resmat(:,state_labels == sylnum) >= 0.1);   
+            post1_types = find(resmat(state_labels == sylnum,:) >= 0.1); 
+            post1_sylnums = state_labels(post1_types);
+            post1_sylnums = setdiff(post1_sylnums,[1000 -1000]);
+            post1_sylnums(results(daynum).Max(roinum,ismember(state_labels(2:end-1),post1_sylnums)) < 0.1) = [];
             %prev_types = setdiff(prev_types,1);
-            for prev_cnt = 1:numel(prev_types)
-                prev_sylnum = state_labels(prev_types(prev_cnt));
-                post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.1);
-                
-                for post_cnt = 1:numel(post_types)
-                    post_sylnum = state_labels(post_types(post_cnt));
+            for post1_cnt = 1:numel(post1_sylnums)
+                post1_sylnum = post1_sylnums(post1_cnt);
+                post2_types = find(trans2(state_labels == sylnum,state_labels == post1_sylnum,:) >= 0.1);
+                post2_sylnums = state_labels(post2_types);
+                post2_sylnums = setdiff(post2_sylnums,[1000 -1000]);
+                post2_sylnums(results(daynum).Max(roinum,ismember(state_labels(2:end-1),post2_sylnums)) < 0.1) = [];
+                %post2_types(results(daynum).Max(roinum,post2_types) < 0.1) = [];
+                for post_cnt = 1:numel(post2_sylnums)
+                    post2_sylnum = post2_sylnums(post_cnt);
                     h=figure('Position',[360    61   560   637],'Visible','off');
-                    ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[1]);
-                    if p<0.05
-                        f = gnames;
-                        h1 = get(ax,'Parent');
-                        fx = get(f,'Children');
-                        figure(h1);
-                        h2 = subplot(2,1,2);
-                        c = copyobj(get(fx,'Children'),h2);
-                        set(h2,'FontSize',16);
-                        title(['Pearson: r =' num2str(r) ', p = ' num2str(p)]);
-
+                    ax = axes; [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,1,[sylnum post1_sylnum post2_sylnum],roinum,1,0,[1 2 3]);
+                    if (gnames >= 5)
                         display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
-                            num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                        outputfilename = fullfile(targetdir,['STAT_signal2prev_duration_pearson_Date_' results(daynum).Date ...
-                            '-roi' num2str(roinum) '-syllables ' ...
-                            num2str(prev_sylnum) '-->' num2str(sylnum) '-->' num2str(post_sylnum) '.png']);
+                                num2str(sylnum) ', sustained' ]);
+                        outputfilename = fullfile(targetdir,['Sustained_duration_n2_Date_' results(daynum).Date ...
+                                '-roi' num2str(roinum) '-syllables ' ...
+                                num2str(sylnum) '-->' num2str(post1_sylnum) '-->' num2str(post2_sylnum) '.png']);
                         saveas(h,outputfilename);
+                        close all;
                     end
-                    close all;
                 end
             end
         end
     end
 end
-       
-        

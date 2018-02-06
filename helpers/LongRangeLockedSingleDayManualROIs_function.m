@@ -24,18 +24,19 @@ function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ig
 %% change according to workstation
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
-display_opt = 0;
+display_opt = 1;
 use_residuals = 1;
-file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata';
+extra_stat = 0;
+file_prefix = 'NonoverlapBaseROIdata_'; %'baseROIdata_'; %
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
-bird_params = bird2_params;
+bird_params = bird1_params;
 delete_frames = 1;
 n_del_frames = 6;
 hvc_offset = 0.04;
 mulcnt = 2;
-edges = [0.25 0.25];
+edges = [0 2];
 opacity_factor = 0.5;
 zscoring_type = 0;
 max_phrase_gap = 0.5;
@@ -329,9 +330,9 @@ for cnt = 1:size(hits,1)
     axis tight;
     xlim([-1 3]-(1-locktoonset));         
 end
-r=[]; p=[];
+r=[]; p=[]; 
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
-if ~isempty(durations)
+if ~isempty(durations) & (extra_stat == 1)
     if use_residuals == 1
         sig_integrals_in = linear_res(sig_integrals_in,sylidx_durations(:,1));
     end
@@ -354,7 +355,7 @@ if ~isempty(durations)
         
     end
 else
-    p = 1; r = 0; gnames = 0;
+    p = 1; r = 0; gnames = numel(durations);
 end
 %set(ax,'CameraTarget', [1 36 0.2605]);
 
