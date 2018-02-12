@@ -1,4 +1,4 @@
-function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag)
+function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag,varargin)
 %% 
 % This script creates single ROI single day alignments to complex sequences
 % with only one variable (duration or syllable type)
@@ -24,22 +24,55 @@ function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ig
 %% change according to workstation
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
-display_opt = 1;
-use_residuals = 1;
-extra_stat = 0;
-file_prefix = 'NonoverlapBaseROIdata_'; %'baseROIdata_'; %
+display_opt = 0;
+use_residuals = 0;
+extra_stat = 1;
+file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'; %
 %%
-bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
-bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
-bird_params = bird1_params;
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
+bird_params = bird2_params;
 delete_frames = 1;
 n_del_frames = 6;
 hvc_offset = 0.04;
 mulcnt = 2;
-edges = [0 2];
+edges = [0 0];
 opacity_factor = 0.5;
 zscoring_type = 0;
 max_phrase_gap = 0.5;
+%% allow controlling parameters as function pair inputs
+nparams=length(varargin);
+for i=1:2:nparams
+	switch lower(varargin{i})
+		case 'delete_frames'
+			delete_frames=varargin{i+1};
+        case 'bird_number'
+			 switch varargin{i+1}
+                 case 1
+                     bird_params = bird1_params;
+                 case 2
+                     bird_params = bird2_params;
+                 case 3
+                     bird_params = bird3_params;
+             end
+        case 'n_del_frames'
+			n_del_frames=varargin{i+1};
+        case 'hvc_offset'
+			hvc_offset=varargin{i+1}; 
+        case 'edges'
+			edges=varargin{i+1}; 
+        case 'zscoring_type'
+			zscoring_type=varargin{i+1}; 
+        case 'max_phrase_gap'
+			max_phrase_gap=varargin{i+1}; 
+        case 'display_opt'
+			display_opt=varargin{i+1}; 
+        case 'use_residuals'
+			use_residuals=varargin{i+1}; 
+    end
+end
+            
+
 %%
 addpath(genpath([GithubDir 'small-utils']),'-end');
 %addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
@@ -47,6 +80,7 @@ bird_name = bird_params{1};
 bird_folder_name = bird_params{2}; 
 template_file = bird_params{3}; 
 annotation_file = bird_params{4}; 
+file_prefix = bird_params{5}; 
 CNMFEfolder = [GithubDir 'CNMF_E'];
 addpath(genpath(CNMFEfolder),'-end');
 
@@ -188,7 +222,7 @@ for fnum = 1:numel(FILES)
                 elements{loc}.segFileStartTimes <= toffset);
                 max_syls = max(max_syls,numel(syls_in_phrase));
                 hits = [hits; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1)) phrases.phraseType(phrase_idx)'];
-                sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(sylidx)) tonset toffset];
+                sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(~isnan(syllabels_sequence))) tonset toffset]; %(sylidx)
                 if sort_type == 1
                     durations = [durations; sum(phrase_durations(phrase_idx(order_flag.*(order_flag > 0))))];
                 else
@@ -295,6 +329,7 @@ for cnt = 1:size(hits,1)
         sum(signal((t <= com_edge) & (t >= hits(cnt,3))))];
     
     for currphrase = 1:numel(phrases.phraseType)
+        try
         plot3(ax,timetag(t >= phrases.phraseFileStartTimes(currphrase) & ...
              t <= phrases.phraseFileEndTimes(currphrase)), ...
              cnt*mulcnt*ones(1,sum(t >= phrases.phraseFileStartTimes(currphrase) & ...
@@ -303,6 +338,9 @@ for cnt = 1:size(hits,1)
              t <= phrases.phraseFileEndTimes(currphrase))+0, ...
              'LineWidth',2,'Color',[colors(find(syllables == phrases.phraseType(currphrase)),:) opacity_factor]);
          hold on;
+        catch em1
+            'd';
+        end
          if (currphrase < numel(phrases.phraseType))
              startidx = max(find(t <= phrases.phraseFileEndTimes(currphrase)));
              stopidx = min(find(t >= phrases.phraseFileStartTimes(currphrase+1)));
@@ -334,13 +372,21 @@ r=[]; p=[];
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
 if ~isempty(durations) & (extra_stat == 1)
     if use_residuals == 1
-        sig_integrals_in = linear_res(sig_integrals_in,sylidx_durations(:,1));
+        try
+            [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) sylidx_durations(:,1:end-1)],sig_integrals_in);
+        catch em1
+           'd'; 
+        end
+        %sig_integrals_in =
+        %linear_res(sig_integrals_in,sylidx_durations(:,1)); this is set to
+        %1 because the original sylidx_durations kept only the duration of
+        %the target phrase .. change it it uncommenting
     end
     if sort_type ~= 1 
         [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
         r = ANOVATAB{2,5};
         gnames = STATS.gnames;
-        [pp,ANOVATAB,STATS] = anova1(durations,id_flags);
+        %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
         [r, p] = corr(durations,sig_integrals_in); 
@@ -368,6 +414,8 @@ function resid = linear_res(vec_a,vec_b)
     alpha = mean(vec_a) - beta*mean(vec_b);
     resid = vec_a - alpha - beta*vec_b;
 end
+
+
 % function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
 %     if isempty(phrases.phraseType)
 %         new_phrases = phrases;

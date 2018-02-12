@@ -1,6 +1,7 @@
-function [results,syllables] = locate_roi_phrased_locked_activity_types(birdnum,ignore_dates,ignore_entries,join_entries,include_zero,edges)
-bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
-bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5'};
+function [results,syllables] = locate_roi_phrased_locked_activity_types(birdnum,ignore_dates,ignore_entries,join_entries,include_zero,varargin)
+% Prerequisit: Run HMM_matlab to extract the signal vs noise segments
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 switch birdnum
     case 1
         bird_params = bird1_params;
@@ -8,10 +9,6 @@ switch birdnum
         bird_params = bird2_params;
     case 3
 end
-bird_name = bird_params{1}; % 'lrb85315'; %'lbr3022'; %
-bird_folder_name = bird_params{2}; %'lrb853_15'; %'lbr3022'; %
-template_file = bird_params{3}; %'lrb85315template'; %'lbr3022_template';%
-annotation_file = bird_params{4};
 
 if isempty(ignore_dates)
     ignore_dates = {'2017_04_19'};
@@ -37,16 +34,51 @@ warp = 0;
 locktoonset = 1;
 mulcnt = 0.1;
 spikes = 2;
-if isempty(edges)
-    edges = [0.1 0.1]; %[0.5 0.5];
-end
+edges = [0.1 0.1]; %[0.5 0.5];
 if isempty(include_zero)
     include_zero = 1;
 end
 opacity_factor = 0.4;
 max_phrase_gap = 0.5;
 
-
+%% allow controlling parameters as function pair inputs
+nparams=length(varargin);
+for i=1:2:nparams
+	switch lower(varargin{i})
+		case 'delete_frames'
+			delete_frames=varargin{i+1};
+        case 'bird_number'
+			 switch varargin{i+1}
+                 case 1
+                     bird_params = bird1_params;
+                 case 2
+                     bird_params = bird2_params;
+                 case 3
+                     bird_params = bird3_params;
+             end
+        case 'n_del_frames'
+			n_del_frames=varargin{i+1};
+        case 'hvc_offset'
+			hvc_offset=varargin{i+1}; 
+        case 'edges'
+			edges=varargin{i+1}; 
+        case 'zscoring_type'
+			zscoring_type=varargin{i+1}; 
+        case 'max_phrase_gap'
+			max_phrase_gap=varargin{i+1}; 
+        case 'display_opt'
+			display_opt=varargin{i+1}; 
+        case 'use_residuals'
+			use_residuals=varargin{i+1};
+        case 'min_num_active_bins'
+			min_num_active_bins=varargin{i+1};
+    end
+end
+bird_name = bird_params{1}; % 'lrb85315'; %'lbr3022'; %
+bird_folder_name = bird_params{2}; %'lrb853_15'; %'lbr3022'; %
+template_file = bird_params{3}; %'lrb85315template'; %'lbr3022_template';%
+annotation_file = bird_params{4};
+file_prefix = bird_params{5}; 
 %%
 %bird_name = 'lrb85315';
 %bird_folder_name = 'lrb853_15';
@@ -118,7 +150,8 @@ for Day_num = 1: size(unique_dates,1)
     results_hist_off = {};
     Day = unique_dates(Day_num,:);
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
-    FILES = dir('NonoverlapBaseROIdata*.mat');
+    %FILES = dir('NonoverlapBaseROIdata*.mat');
+    FILES = dir([file_prefix bird_name '*.mat']);
     FILES = {FILES.name};
     for syl_cnt = 1:numel(syllables)
         sylnum = syllables(syl_cnt);
@@ -175,7 +208,7 @@ for Day_num = 1: size(unique_dates,1)
                 %if ismember(sylnum,phrases.phraseType)
                 load(fname);
                 load(['GaussHmmMAP_' fname]);
-                display(fname);
+                %display(fname);
 %                 if spikes ==2
 %                     s = zscore(dff(:,n_del_frames+1:end)')';
 %                 end
@@ -374,7 +407,7 @@ for Day_num = 1: size(unique_dates,1)
 end
 
 function element = trim_element(old_element)
-
+try
     element = old_element;
     trim_locs = find(ismember(element.segType,ignore_entries));
     element.segAbsStartTimes(trim_locs) = [];
@@ -385,5 +418,9 @@ function element = trim_element(old_element)
         join_locs = find(ismember(element.segType,join_entries{i}));
         element.segType(join_locs) = join_entries{i}(1);
     end
+catch em
+   'd'; 
+   display(fname);
+end
 end
 end

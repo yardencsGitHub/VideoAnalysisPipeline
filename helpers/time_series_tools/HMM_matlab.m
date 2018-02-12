@@ -1,10 +1,16 @@
 %%
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/pmtk3'),'-end');
 nstates = 2;
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
+bird_params = bird2_params;
 
-bird_name = 'lrb85315';
-bird_folder_name = 'lrb853_15';
-template_file = 'lrb85315template';
-annotation_file = 'lrb85315auto_annotation5_fix';
+bird_name = bird_params{1}; 
+bird_folder_name = bird_params{2}; 
+template_file = bird_params{3}; 
+annotation_file = bird_params{4}; 
+file_prefix = bird_params{5}; 
+
 CNMFEfolder = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/CNMF_E';
 laptop_mov_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs'];
 laptop_wav_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/movs/wav'];
@@ -16,12 +22,8 @@ DamagedFolder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/'
 laptop_manualROI_folder = ['/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/' bird_folder_name '/ManualROIs'];
 
 %%
-syllables = [0:9 200:209 300:309 400:409 500];
 
 cd (laptop_manualROI_folder);
-
-n_syllables = numel(syllables);
-
 
 load(annotation_file);
 ord = [];
@@ -35,12 +37,13 @@ end
 elements = elements(indx);
 keys = keys(indx);
 dates = dates(indx,:);
-unique_dates = datestr(setdiff(unique(datenum(dates)),736804),'yyyy_mm_dd'); %does not include 04/19th (remove for other birds)
+unique_dates = datestr(unique(datenum(dates)),'yyyy_mm_dd'); %datestr(setdiff(unique(datenum(dates)),736804),'yyyy_mm_dd'); %does not include 04/19th (remove for other birds)
 %%
 for Day_num = 1: size(unique_dates,1)
     Day = unique_dates(Day_num,:);
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
-    FILES = dir('NonoverlapBaseROIdata*.mat');
+    FILES = dir([file_prefix bird_name '*.mat']);
+    %FILES = dir('NonoverlapBaseROIdata*.mat');
     FILES = {FILES.name};
     for fnum = 1:numel(FILES)
         fname = FILES{fnum};
