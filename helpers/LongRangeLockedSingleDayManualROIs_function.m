@@ -27,6 +27,7 @@ GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/'
 display_opt = 0;
 use_residuals = 0;
 extra_stat = 1;
+compute_raster = 0;
 file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'; %
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
@@ -69,6 +70,8 @@ for i=1:2:nparams
 			display_opt=varargin{i+1}; 
         case 'use_residuals'
 			use_residuals=varargin{i+1}; 
+        case 'compute_raster'
+			compute_raster=varargin{i+1}; 
     end
 end
             
@@ -168,9 +171,10 @@ FILES = dir([file_prefix bird_name '*.mat']);
 FILES = {FILES.name};
 hits = [];
 max_syls = 0;
-durations = [];
-sylidx_durations = [];
-sequence_durations = [];
+durations = []; % durations of selected elements only
+sylidx_durations = []; % duration of all numbered phrases in sequence and the onset and offset of the target phrase
+sequence_total_lengths = []; % the total duration, including gaps, of the entire sequence
+sequence_durations = []; % durations of all phrases in sequence
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
@@ -214,7 +218,7 @@ for fnum = 1:numel(FILES)
             phrase_idx = endpoint(phrase_loc) - numel(target_sequence_str) + [1:numel(target_sequence_str)];
             try
             if ~any(gap_durations(phrase_idx(1:end-1)) > max_phrase_gap)
-            
+                
                 phrasenum = phrase_locs(phrase_loc);
                 tonset = phrases.phraseFileStartTimes(phrasenum);
                 toffset = phrases.phraseFileEndTimes(phrasenum);
@@ -229,6 +233,8 @@ for fnum = 1:numel(FILES)
                     durations = [durations; sum(phrase_durations(phrase_idx(sylidx)))];
                 end
                 sequence_durations = [sequence_durations; phrase_durations(phrase_idx)];
+                sequence_total_lengths = [sequence_total_lengths; phrases.phraseFileEndTimes(phrase_idx(end)) - phrases.phraseFileStartTimes(phrase_idx(1))];
+                
             end
             catch em
                 '4';
@@ -259,6 +265,10 @@ sig_integrals_in = [];
 sig_integrals_before = [];
 sig_com_before = [];
 max_signal = 0;
+if (compute_raster == 1)
+    max_sequence_duration = max(sequence_total_lengths);
+    signal_raster = zeros(size(hits,1),ceil(max_sequence_duration*1000+4200))*nan; 
+end
 for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
     phrasenum = hits(cnt,2);
@@ -291,7 +301,7 @@ for cnt = 1:size(hits,1)
             catch em
                 [c, s, options] = deconvolveCa((y(ROI,:)),'ar2','method','foopsi','optimize_b',1);
             end
-            signal = c;
+            signal = c + options.b*(options.b < 0);
         case 1
             try 
                 [c, s, options] = deconvolveCa(y(ROI,:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin');
@@ -324,6 +334,18 @@ for cnt = 1:size(hits,1)
     sig_integrals_before = [sig_integrals_before; ...
         sum(signal((t <= tonset-edges(1)) & (t >= hits(cnt,3))))];
     timetag = (t-tonset*locktoonset-(1-locktoonset)*toffset);
+    if (compute_raster == 1)
+        interpolated_signal = interp1(timetag,signal,timetag(1):0.001:timetag(end)+1/30);
+        interpolated_timetag = interp1(timetag,timetag,timetag(1):0.001:timetag(end)+1/30);
+        idxmap = [1:numel(interpolated_timetag)] - min(find(abs(interpolated_timetag) == min(abs(interpolated_timetag))))+2100+round((1-locktoonset)*max_sequence_duration*1000);
+        t_on = (phrases.phraseFileStartTimes(1)-tonset*locktoonset-(1-locktoonset)*toffset);
+        t_off = (phrases.phraseFileEndTimes(end)-tonset*locktoonset-(1-locktoonset)*toffset);
+        idxs = find((interpolated_timetag >= t_on) & (interpolated_timetag <= t_off) & ...
+                    (interpolated_timetag >= -2*locktoonset  + (-max_sequence_duration-2)*(1-locktoonset)) & ...
+                    (interpolated_timetag <= 2*(1-locktoonset)+locktoonset*(2+max_sequence_duration)));
+        signal_raster(cnt,idxmap(idxs)) = interpolated_signal(idxs);
+    end
+    
     sig_com_before = [sig_com_before; ...
         sum(signal((t <= com_edge) & (t >= hits(cnt,3))).*timetag(((t <= com_edge) & (t >= hits(cnt,3))))')/ ...
         sum(signal((t <= com_edge) & (t >= hits(cnt,3))))];
