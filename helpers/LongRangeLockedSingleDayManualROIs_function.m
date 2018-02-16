@@ -174,7 +174,7 @@ max_syls = 0;
 durations = []; % durations of selected elements only
 sylidx_durations = []; % duration of all numbered phrases in sequence and the onset and offset of the target phrase
 sequence_total_lengths = []; % the total duration, including gaps, of the entire sequence
-sequence_durations = []; % durations of all phrases in sequence
+sequence_onsets = []; % durations of all phrases in sequence
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
@@ -232,7 +232,8 @@ for fnum = 1:numel(FILES)
                 else
                     durations = [durations; sum(phrase_durations(phrase_idx(sylidx)))];
                 end
-                sequence_durations = [sequence_durations; phrase_durations(phrase_idx)];
+                sequence_onsets = [sequence_onsets; (phrases.phraseFileStartTimes(phrase_idx)-tonset)*locktoonset + ...
+                    (phrases.phraseFileEndTimes(phrase_idx)-toffset)*(1-locktoonset)];
                 sequence_total_lengths = [sequence_total_lengths; phrases.phraseFileEndTimes(phrase_idx(end)) - phrases.phraseFileStartTimes(phrase_idx(1))];
                 
             end
@@ -398,6 +399,7 @@ if ~isempty(durations) & (extra_stat == 1)
             [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) sylidx_durations(:,1:end-1)],sig_integrals_in);
         catch em1
            'd'; 
+           sig_integrals_in = linear_res(sig_integrals_in,durations);
         end
         %sig_integrals_in =
         %linear_res(sig_integrals_in,sylidx_durations(:,1)); this is set to
@@ -424,6 +426,30 @@ if ~isempty(durations) & (extra_stat == 1)
     end
 else
     p = 1; r = 0; gnames = numel(durations);
+end
+if compute_raster == 1
+    figure; imagesc(signal_raster); colormap(copper); yticks([]); hold on;   
+    %line([2100 2100],[0 size(hits,1)+0.5],'Color','w');
+    zeroidx = 2100*locktoonset + (1-locktoonset)*(size(signal_raster,2)-2100);
+    for i = 1:size(hits,1)
+        for j = 1:size(sequence_onsets,2)
+            line([zeroidx+1000*sequence_onsets(i,j) zeroidx+1000*sequence_onsets(i,j)],[i-0.5 i+0.5],'Color','w'); %sylidx_
+        end
+    end
+    if sort_type ~= 1 
+        segtypes = unique(id_flags);
+        for segt = 1:numel(segtypes)
+            ntrials = find(id_flags == segtypes(segt)); ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
+            plot(zeros(numel(ntrials),1),ntrials,'Color',...
+                colors(find(syllables == segtypes(segt)),:),'LineWidth',10);
+        end
+    end
+    %
+    if locktoonset == 1
+        xticks([2100 3100]); xticklabels([0 1]);
+    else
+        xticks([zeroidx-1000 zeroidx]); xticklabels([-1 0]);
+    end
 end
 %set(ax,'CameraTarget', [1 36 0.2605]);
 
