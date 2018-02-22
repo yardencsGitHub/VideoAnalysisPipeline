@@ -1,4 +1,4 @@
-function [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag,varargin)
+function [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag,varargin)
 %% 
 % This script creates single ROI single day alignments to complex sequences
 % with only one variable (duration or syllable type)
@@ -132,6 +132,7 @@ if isempty(ax)
     h=figure('Visible','off','Position',[77          91        640         600]);
     ax = axes;
 end
+hndls = ax;
 %%
 AlphaNumeric = '{}ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 target_sequence_str = '';
@@ -261,7 +262,6 @@ end
 
 
 %%
-
 sig_integrals_in = [];
 sig_integrals_before = [];
 sig_com_before = [];
@@ -410,6 +410,7 @@ if ~isempty(durations) & (extra_stat == 1)
         [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
         r = ANOVATAB{2,5};
         gnames = STATS.gnames;
+        hndls = [hndls; gca];
         %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
@@ -439,8 +440,8 @@ if compute_raster == 1
     if sort_type ~= 1 
         segtypes = unique(id_flags);
         for segt = 1:numel(segtypes)
-            ntrials = find(id_flags == segtypes(segt)); ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
-            plot(zeros(numel(ntrials),1),ntrials,'Color',...
+            ntrials = find(id_flags == segtypes(segt));% ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
+            plot(zeros(2,1),[ntrials(1)-0.4; ntrials(end)+0.4],'Color',... %numel(ntrials)
                 colors(find(syllables == segtypes(segt)),:),'LineWidth',10);
         end
     end
@@ -450,6 +451,7 @@ if compute_raster == 1
     else
         xticks([zeroidx-1000 zeroidx]); xticklabels([-1 0]);
     end
+    hndls = [hndls; gca];
 end
 %set(ax,'CameraTarget', [1 36 0.2605]);
 
