@@ -3,9 +3,9 @@
 % file names to process are in the variable 'keys' in the file
 % 'FS_movies_list.mat'
 FSfolder = '/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline';
-addpath(genpath(FSfolder));
+addpath(genpath(FSfolder),'-end');
 UtilsFolder = '/Users/yardenc/Documents/GitHub/small-utils';
-addpath(genpath(UtilsFolder));
+addpath(genpath(UtilsFolder),'-end');
 % OutputFolder = '/Volumes/home/Data/Imaging/lrb853_15/RawData';
 
 % previos_annotation_file = 'lrb85315auto_annotation3';
