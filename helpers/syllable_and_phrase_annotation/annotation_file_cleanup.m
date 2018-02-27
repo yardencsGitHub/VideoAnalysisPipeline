@@ -73,6 +73,7 @@ for fnum = 1:numel(keys)
     end
 end
 %% 5. Find broken syllables
+clc;
 display(['Syllables with gaps < ' num2str(maxdiff) ':']);
 for fnum = 1:numel(elements)
   phrases = return_phrase_times(elements{fnum});

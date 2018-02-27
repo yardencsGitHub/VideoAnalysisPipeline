@@ -3,7 +3,9 @@ addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitH
 nstates = 2;
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
-bird_params = bird2_params;
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
+birdnum = 3;
+bird_params = bird3_params;
 
 bird_name = bird_params{1}; 
 bird_folder_name = bird_params{2}; 
@@ -41,6 +43,7 @@ unique_dates = datestr(unique(datenum(dates)),'yyyy_mm_dd'); %datestr(setdiff(un
 %%
 for Day_num = 1: size(unique_dates,1)
     Day = unique_dates(Day_num,:);
+    try
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
     FILES = dir([file_prefix bird_name '*.mat']);
     %FILES = dir('NonoverlapBaseROIdata*.mat');
@@ -67,5 +70,8 @@ for Day_num = 1: size(unique_dates,1)
         end
         outname = ['GaussHmmMAP_' fname];
         save(outname,'map_states');
+    end
+    catch em
+        display(['Folder ' [laptop_manualROI_folder '/ROIdata/' Day] ' does not exist'])
     end
 end

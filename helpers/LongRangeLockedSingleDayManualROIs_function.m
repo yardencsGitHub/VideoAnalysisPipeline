@@ -32,6 +32,7 @@ file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'; %
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
 bird_params = bird2_params;
 delete_frames = 1;
 n_del_frames = 6;
@@ -300,7 +301,11 @@ for cnt = 1:size(hits,1)
             try 
                 [c, s, options] = deconvolveCa(y(ROI,:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin');%,'optimize_pars');
             catch em
+                try
                 [c, s, options] = deconvolveCa((y(ROI,:)),'ar2','method','foopsi','optimize_b',1);
+                catch emm
+                    'g'
+                end
             end
             signal = c + options.b*(options.b < 0);
         case 1
@@ -394,9 +399,9 @@ end
 r=[]; p=[]; 
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
 if ~isempty(durations) & (extra_stat == 1)
-    if use_residuals == 1
+    if use_residuals ~= 0
         try
-            [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) sylidx_durations(:,1:end-1)],sig_integrals_in);
+            [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) sylidx_durations(:,1:end-use_residuals)],sig_integrals_in);
         catch em1
            'd'; 
            sig_integrals_in = linear_res(sig_integrals_in,durations);
@@ -410,7 +415,7 @@ if ~isempty(durations) & (extra_stat == 1)
         [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
         r = ANOVATAB{2,5};
         gnames = STATS.gnames;
-        hndls = [hndls; gca];
+        
         %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
@@ -425,6 +430,7 @@ if ~isempty(durations) & (extra_stat == 1)
 %         set(gca,'FontSize',16); xlabel('sig.integral'); ylabel('onset'); title(['(r,p) = ' num2str([r1,p1])]);
         
     end
+    hndls = [hndls; gca];
 else
     p = 1; r = 0; gnames = numel(durations);
 end
