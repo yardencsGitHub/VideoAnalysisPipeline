@@ -381,8 +381,8 @@ end
 %targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PostDurationVsSignal';
 targetdir = ['/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/' bird_folder_name ...
     '/ManualROIs/LongRangeCorrelations/PrevDurationVsSignal'];
-signal_thr = 0.1;
-hmm_thr = 0.1;
+signal_thr = 0.05;
+hmm_thr = 0.05;
 clc;
 display('Signal relation to previous phrase duration:');
 for daynum = 1:numel(results)
@@ -391,24 +391,21 @@ for daynum = 1:numel(results)
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
-            prev_types = find(resmat(:,state_labels == sylnum) >= 0.1);   
+            prev_types = find(resmat(:,state_labels == sylnum) >= 0.05);   
             %prev_types = setdiff(prev_types,1);
             for prev_cnt = 1:numel(prev_types)
                 prev_sylnum = state_labels(prev_types(prev_cnt));
-                post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.1);
+                post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.05);
                 
                 for post_cnt = 1:numel(post_types)
                     post_sylnum = state_labels(post_types(post_cnt));
                     h=figure('Position',[360    61   560   637],'Visible','off');
-                    ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[1],...
-                        'edges',[0 2],'use_residuals',0,'display_opt',0);
+                    ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[1],...
+                        'edges',[0 2],'use_residuals',0,'display_opt',0,'bird_number',3);
                     if p<0.05
-                        f = gnames;
-                        h1 = get(ax,'Parent');
-                        fx = get(f,'Children');
-                        figure(h1);
+                        figure(h);
                         h2 = subplot(2,1,2);
-                        c = copyobj(get(fx,'Children'),h2);
+                        c = copyobj(get(hndls(2),'Children'),h2);
                         set(h2,'FontSize',16);
                         title(['Pearson: r =' num2str(r) ', p = ' num2str(p)]);
 
@@ -432,8 +429,8 @@ end
 %targetdir = '/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/lrb853_15/ManualROIs/LongRangeCorrelations/PostDurationVsSignal';
 targetdir = ['/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/' bird_folder_name ...
     '/ManualROIs/LongRangeCorrelations/PostDurationVsSignal'];
-signal_thr = 0.1;
-hmm_thr = 0.1;
+signal_thr = 0.05;
+hmm_thr = 0.05;
 clc;
 display('Signal relation to next phrase duration:');
 for daynum = 1:numel(results)
@@ -442,24 +439,21 @@ for daynum = 1:numel(results)
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
-            prev_types = find(resmat(:,state_labels == sylnum) >= 0.1);   
+            prev_types = find(resmat(:,state_labels == sylnum) >= 0.05);   
             %prev_types = setdiff(prev_types,1);
             for prev_cnt = 1:numel(prev_types)
                 prev_sylnum = state_labels(prev_types(prev_cnt));
-                post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.1);
+                post_types = find(trans2(state_labels == prev_sylnum,state_labels == sylnum,:) >= 0.05);
                 
                 for post_cnt = 1:numel(post_types)
                     post_sylnum = state_labels(post_types(post_cnt));
                     h=figure('Position',[360    61   560   637],'Visible','off');
-                    ax = subplot(2,1,1); [ax,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[3],...
-                        'edges',[2 0],'use_residuals',0,'display_opt',0);
+                    ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[prev_sylnum sylnum post_sylnum],roinum,1,0,[3],...
+                        'edges',[2 0],'use_residuals',0,'display_opt',0,'bird_number',3);
                     if p<0.05
-                        f = gnames;
-                        h1 = get(ax,'Parent');
-                        fx = get(f,'Children');
-                        figure(h1);
+                        figure(h);
                         h2 = subplot(2,1,2);
-                        c = copyobj(get(fx,'Children'),h2);
+                        c = copyobj(get(hndls(2),'Children'),h2);
                         set(h2,'FontSize',16);
                         title(['Pearson: r =' num2str(r) ', p = ' num2str(p)]);
 
