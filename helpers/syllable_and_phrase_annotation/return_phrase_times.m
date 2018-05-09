@@ -1,5 +1,5 @@
 function res = return_phrase_times(element)
-    max_separation = 0.5;
+    max_separation = 0.25;
     t_onset = [];
     t_offset = [];
     segtypes = [];

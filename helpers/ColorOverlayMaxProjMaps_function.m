@@ -1,4 +1,4 @@
-function [hndls,lm,syl_types] = LongRangeLockedSingleDayMaxProjMaps_function(Day,ignore_entries,join_entries,sylidx,syllabels_sequence,order_flag,varargin)
+function [hndls,syl_types] = ColorOverlayMaxProjMaps_function(Day,ignore_entries,join_entries,sylidx,syllabels_sequence,order_flag,tags_to_color,base_colors,min_pixel_value,varargin)
 %% 
 % This script creates single ROI single day alignments to complex sequences
 % with only one variable (duration or syllable type)
@@ -19,7 +19,10 @@ function [hndls,lm,syl_types] = LongRangeLockedSingleDayMaxProjMaps_function(Day
 %   order_flag - the correlate. Use positive integers to indicate durations of
 %   phrases. A vector of positive integers will result in summation of
 %   durations. Use negative integers for type (no vectors)
-
+%   tags_to_color - which tags to use in creating the overlay
+%   base_colors - a cell array of rgb values corresponding to
+%   'tags_to_color
+%   min_pixel_value - lower values are set to zero
 %% change according to workstation
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
@@ -45,11 +48,8 @@ quantile_threshold = 0.1;
 bird_number = 1;
 ROIs = 0;
 reference_tag = -1;
-smooth_images = 0;
-zscore_stack = 0;
-caxis_quantile_limit = 0.999;
-color_map_direction = 1;
 set_bg_to_level_zero = 0;
+intensity_gain = 1.0;
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
@@ -88,16 +88,10 @@ for i=1:2:nparams
             ROIs = varargin{i+1};
         case 'reference_tag'
             reference_tag = varargin{i+1};
-        case 'smooth_images'
-            smooth_images = varargin{i+1};
-        case 'zscore_stack'
-            zscore_stack = varargin{i+1};
-        case 'caxis_quantile_limit'
-            caxis_quantile_limit = varargin{i+1};
-        case 'color_map_direction'
-            color_map_direction = varargin{i+1};
         case 'set_bg_to_level_zero'
             set_bg_to_level_zero = varargin{i+1};
+        case 'intensity_gain'
+            intensity_gain = varargin{i+1};
     end
 end
             
@@ -301,11 +295,11 @@ for cnt = 1:size(hits,1)
     MaxIm{syl_types == id_flags(cnt)} = cat(3,MaxIm{syl_types == id_flags(cnt)},phrases.maxImages(:,:,phrasenum));
     catch eem
         'f';
+        id_flags(cnt) = -1;
     end
          
 end
-
-'1';
+id_flags(id_flags == -1) = [];
 %% Now create images
 hndls = [];
 roi_map_filename = [laptop_manualROI_folder '/ROIdata/' Day '/' roi_map_prefix Day '.mat'];
@@ -319,71 +313,60 @@ for roi_n = 1:numel(ROI.coordinates)
     mask(ROI.coordinates{roi_n}(:,1)*nrows+ROI.coordinates{roi_n}(:,2))=1;
     textlocs = [textlocs; mean(ROI.coordinates{roi_n}(:,1)) mean(ROI.coordinates{roi_n}(:,2))];
 end
-figure; imagesc(mask); hold on; colormap(1-gray)
+figure('Position',[1308         682         770         551]); imagesc(mask); hold on; colormap(1-gray)
 for roi_n = 1:numel(ROI.coordinates)
     text(textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',16,'HorizontalAlignment','center','Color','k');
 end
 contour(mask,[0.5 0.5],'g');
+xticks([]); yticks([]); set(gca,'Position',[0.0842    0.0871    0.8312    0.8711]);
 hndls = [hndls gca];
-cmap1 = [[0:255 255*ones(1,256)]/256;[0:255 255:-1:0]/256; [255*ones(1,256) 255:-1:0]/256]';
-% filt_rad = 5; filt_sigma = 4; % lowpass filter
-% h = fspecial('gaussian',filt_rad,filt_sigma);
+filt_rad = 10; filt_sigma = 3; % lowpass filter
+h = fspecial('gaussian',filt_rad,filt_sigma);
 mn = cat(3,MaxIm{:});
-if zscore_stack == 1
-    mn = zscore(mn,0,3);
-end
-if smooth_images == 1
-    filt_rad = 5; filt_sigma = 2; % highpass filter 
-    h = fspecial('gaussian',filt_rad,filt_sigma);
-    %mn = imfilter(mn,h,'circular','replicate');
-end
-% mn = imfilter(mn,h,'circular','replicate');
-if reference_tag ~= -1
-    bg = nanmean(mn(:,:,id_flags ~= reference_tag),3);
-end
-sig = bsxfun(@times,mn,roimask);
-%lm = nanmax(abs(nanmax(reshape(sig,640*480,size(sig,3)))-nanmax(bg(:).*roimask(:))))/2;
-lm = 0;
-for fignum = 1:numel(MaxIm)
-    if reference_tag == -1
-        bg = nanmean(mn(:,:,id_flags ~= syl_types(fignum)),3);
-        %lm = nanmax(lm,nanmax(abs(nanmax(reshape(sig,640*480,size(sig,3)))-nanmax(bg(:).*roimask(:))))/2);
-    end
-    Iaddition = nanmean(mn(:,:,id_flags == syl_types(fignum)),3);
+mn = imfilter(mn,h,'circular','replicate');
+%mn = zscore(mn,0,3); zscoring is a bad idea, IT CREATES BIAS
+I = zeros(480,640,3); 
+maxnorm = 0;
+for layernum = 1:numel(tags_to_color)
+    Iaddition = nanmean(mn(:,:,ismember(id_flags,tags_to_color{layernum})),3);
     if set_bg_to_level_zero ~= 0
         Iaddition = Iaddition - quantile(Iaddition(:),set_bg_to_level_zero); %Iaddition(Iaddition(:)<0)=0;
-        bg = bg - quantile(bg(:),set_bg_to_level_zero);
     end
-    if smooth_images == 1
-        I = imfilter(Iaddition,h,'circular','replicate') - imfilter(bg,h,'circular','replicate');
-    else
-        I = (Iaddition - bg); %bg);
-    end
-    lm = quantile(abs(I(:)),caxis_quantile_limit);
-    I(abs(I(:)) < quantile(abs(I(:)),quantile_threshold)) = 0;
-    figure; imagesc(I);
-    if color_map_direction == 1
-        colormap(cmap1);
-    else
-        colormap(fliplr(cmap1));
-    end
-    caxis([-lm lm]);
-    hold on;
-    if ~ismember(0,ROIs)
-        contour(roimask,[0.5 0.5],'g');
-        for roi_n = 1:numel(ROI.coordinates)
-            if ismember(roi_n,ROIs)
-                text(textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',16,'HorizontalAlignment','center','Color','k');
-            end
+    maxnorm = max(maxnorm,max(Iaddition(:)));
+    I = I + repmat(Iaddition,1,1,3).*repmat(reshape(base_colors{layernum},1,1,3),480,640);    
+end
+%I = I-min(I(:));
+%I = I - min(min(sqrt(sum(I.*I,3))));
+I = I/maxnorm; I(I<0)=0;
+%min_pixel_value = quantile(I(:),min_pixel_value);
+min_pixel_value = quantile(reshape(sqrt(sum(I.*I,3)),1,640*480),min_pixel_value);
+
+%I(sqrt(sum(I.*I,3)) < min_pixel_value,:) = 0;
+I = I.*repmat(sqrt(sum(I.*I,3)) > min_pixel_value,1,1,3);
+I = I - min_pixel_value/sqrt(3); I(I<0)=0;
+I = I/max(max(sqrt(sum(I.*I,3))))*sqrt(3)*intensity_gain; %
+figure('Position',[1308         682         770         551]); imshow(I); %/max(I(:))*1.0);
+hold on;
+if ~ismember(0,ROIs)
+    contour(roimask,[0.5 0.5],'Color',[0.5 0.5 0.5]);
+    for roi_n = 1:numel(ROI.coordinates)
+        if ismember(roi_n,ROIs)
+            text(textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',48,'HorizontalAlignment','center','Color',[0.5 0.5 0.5]);
         end
     end
-        
-    %lm = quantile(abs(I(:)),0.95); caxis([-lm lm]);
-    xticks([]); yticks([]);
-    set(gca,'FontSize',24);
-    title(syl_types(fignum));
-    hndls = [hndls gca];
 end
+patch(300+[0 50*5/6 50*5/6 0],200+ [0 0 5 5],'w');
+xticks([]); yticks([]);
+hndls = [hndls gca];
 
+figure;
+I1 = I/sqrt(3);%/max(I(:));
+maxcol = max(max(sqrt(sum(I1.^2,3))));
+for layernum = 1:numel(tags_to_color)
+    subplot(1,numel(tags_to_color),layernum);
+    %maxcol = max(max(sum(I1.*repmat(reshape(base_colors{layernum},1,1,3),480,640),3)))/sqrt(sum(base_colors{layernum}.^2));
+    newI = base_colors{layernum}'*[0:maxcol/24:maxcol];
+    imshow(reshape(newI',25,1,3));
+end
 
 

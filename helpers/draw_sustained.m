@@ -178,7 +178,11 @@ for roi_cnt = 1:numel(sus_loc)
                'd' 
             end
         end
+        try
         subsignal = signal(t >= phrases.phraseFileStartTimes(phrase_nums(1)) & t <= phrases.phraseFileEndTimes(phrase_nums(end)));
+        catch emm
+            'r';
+        end
         sub_t = timetag(t >= phrases.phraseFileStartTimes(phrase_nums(1)) & t <= phrases.phraseFileEndTimes(phrase_nums(end)));
         increases=arrayfun(@(x)max(subsignal(x:x+6)),7:numel(subsignal)-6)-arrayfun(@(x)min(subsignal(x-6:x)),7:numel(subsignal)-6);
         increases = 1*(increases > 0.1);
@@ -203,6 +207,7 @@ for roi_cnt = 1:numel(sus_loc)
             dec_fits(map_on(decrease_locs(dec_num)):map_off(decrease_locs(dec_num))) = ...
                 beta(1)*(dec_t<beta(2))+beta(1)*exp(-(dec_t-beta(2))/beta(3)).*(dec_t>=beta(2))+min_dec_sig;
             all_betas = [all_betas; beta(3)];
+            % find the phrase types that participate?
         end
         plot3(ax,sub_t, ...
                  fnum*mulcnt*ones(1,numel(sub_t)), ...

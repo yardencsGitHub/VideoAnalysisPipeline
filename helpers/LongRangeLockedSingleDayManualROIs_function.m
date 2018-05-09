@@ -1,4 +1,4 @@
-function [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag,varargin)
+function [hndls,r,p,gnames,outvars] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag,varargin)
 %% 
 % This script creates single ROI single day alignments to complex sequences
 % with only one variable (duration or syllable type)
@@ -42,6 +42,11 @@ edges = [0 0];
 opacity_factor = 0.5;
 zscoring_type = 0;
 max_phrase_gap = 0.5;
+raster_edges = 2;
+label_mark_loc = 0;
+flag_loc_for_durations = 1;
+add_sort_crit = [];
+sort_crit_loc = 0.5;
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
@@ -71,8 +76,19 @@ for i=1:2:nparams
 			display_opt=varargin{i+1}; 
         case 'use_residuals'
 			use_residuals=varargin{i+1}; 
+        case 'raster_edges'
+			raster_edges=varargin{i+1}; 
         case 'compute_raster'
 			compute_raster=varargin{i+1}; 
+        case 'label_mark_loc'
+            label_mark_loc=varargin{i+1}; 
+        case 'flag_loc_for_durations'
+            flag_loc_for_durations=varargin{i+1}; 
+        case 'add_sort_crit'
+            add_sort_crit = varargin{i+1}; 
+        case 'sort_crit_loc'
+            sort_crit_loc = varargin{i+1};
+            
     end
 end
             
@@ -227,8 +243,12 @@ for fnum = 1:numel(FILES)
                 syls_in_phrase = find(elements{loc}.segFileEndTimes >= tonset & ...
                 elements{loc}.segFileStartTimes <= toffset);
                 max_syls = max(max_syls,numel(syls_in_phrase));
-                hits = [hits; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1)) phrases.phraseType(phrase_idx)'];
-                sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(~isnan(syllabels_sequence))) tonset toffset]; %(sylidx)
+                hits = [hits; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1)) phrases.phraseType(phrase_idx)' sum(phrase_durations(phrase_idx(sylidx)))];
+                
+                sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(~isnan(syllabels_sequence))) phrases.phraseFileStartTimes(phrase_idx(~isnan(syllabels_sequence) & ([1:numel(syllabels_sequence)]~=sylidx)))-tonset tonset toffset];
+%                     phrases.phraseFileStartTimes(phrase_idx(~isnan(syllabels_sequence) & ([1:numel(syllabels_sequence)]~=sylidx)))-tonset ...
+%                     phrases.phraseFileEndTimes(phrase_idx(~isnan(syllabels_sequence)))-tonset ...
+                     %(sylidx)
                 if sort_type == 1
                     durations = [durations; sum(phrase_durations(phrase_idx(order_flag.*(order_flag > 0))))];
                 else
@@ -250,12 +270,16 @@ end
 try 
     if sort_type == 1
         [durations,dur_idx] = sort(durations);
+        id_flags = hits(dur_idx,3 + flag_loc_for_durations);
     else
-        [id_flags,dur_idx] = sort(hits(:,3 - order_flag));
+        %[id_flags,dur_idx] = sort(hits(:,3 - order_flag));
+        [~,dur_idx] = sortrows(hits,[3 - order_flag 3+add_sort_crit size(hits,2)]);
+        id_flags = hits(dur_idx,3 - order_flag);
         durations = durations(dur_idx);
     end
     hits = hits(dur_idx,:);
     sylidx_durations = sylidx_durations(dur_idx,:);
+    sequence_onsets = sequence_onsets(dur_idx,:);
 catch em
     'f';
     p=1; r=0; gnames=''; return;
@@ -269,7 +293,7 @@ sig_com_before = [];
 max_signal = 0;
 if (compute_raster == 1)
     max_sequence_duration = max(sequence_total_lengths);
-    signal_raster = zeros(size(hits,1),ceil(max_sequence_duration*1000+4200))*nan; 
+    signal_raster = zeros(size(hits,1),ceil(max_sequence_duration*1000+200+2000*raster_edges))*nan; 
 end
 for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
@@ -343,12 +367,12 @@ for cnt = 1:size(hits,1)
     if (compute_raster == 1)
         interpolated_signal = interp1(timetag,signal,timetag(1):0.001:timetag(end)+1/30);
         interpolated_timetag = interp1(timetag,timetag,timetag(1):0.001:timetag(end)+1/30);
-        idxmap = [1:numel(interpolated_timetag)] - min(find(abs(interpolated_timetag) == min(abs(interpolated_timetag))))+2100+round((1-locktoonset)*max_sequence_duration*1000);
+        idxmap = [1:numel(interpolated_timetag)] - min(find(abs(interpolated_timetag) == min(abs(interpolated_timetag))))+(1000*raster_edges+100)+round((1-locktoonset)*max_sequence_duration*1000);
         t_on = (phrases.phraseFileStartTimes(1)-tonset*locktoonset-(1-locktoonset)*toffset);
         t_off = (phrases.phraseFileEndTimes(end)-tonset*locktoonset-(1-locktoonset)*toffset);
         idxs = find((interpolated_timetag >= t_on) & (interpolated_timetag <= t_off) & ...
-                    (interpolated_timetag >= -2*locktoonset  + (-max_sequence_duration-2)*(1-locktoonset)) & ...
-                    (interpolated_timetag <= 2*(1-locktoonset)+locktoonset*(2+max_sequence_duration)));
+                    (interpolated_timetag >= -raster_edges*locktoonset  + (-max_sequence_duration-raster_edges)*(1-locktoonset)) & ...
+                    (interpolated_timetag <= raster_edges*(1-locktoonset)+locktoonset*(raster_edges+max_sequence_duration)));
         signal_raster(cnt,idxmap(idxs)) = interpolated_signal(idxs);
     end
     
@@ -399,7 +423,7 @@ end
 r=[]; p=[]; 
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
 if ~isempty(durations) & (extra_stat == 1)
-    if use_residuals ~= 0
+    if use_residuals > 0
         try
             [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) sylidx_durations(:,1:end-use_residuals)],sig_integrals_in);
         catch em1
@@ -410,17 +434,31 @@ if ~isempty(durations) & (extra_stat == 1)
         %linear_res(sig_integrals_in,sylidx_durations(:,1)); this is set to
         %1 because the original sylidx_durations kept only the duration of
         %the target phrase .. change it it uncommenting
+    elseif use_residuals == 0
+        [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) durations],sig_integrals_in);
+    else
+        'do nothing';
     end
+    outvars.sig_integrals_in = sig_integrals_in;
     if sort_type ~= 1 
         [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
+        boxplot(sig_integrals_in,id_flags);
         r = ANOVATAB{2,5};
         gnames = STATS.gnames;
-        
+        outvars.id_flags = id_flags;
         %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
         [r, p] = corr(durations,sig_integrals_in); 
-        gnames = figure('Visible','off'); plot(durations,sig_integrals_in,'bo','MarkerSize',10,'MarkerFaceColor','b','MarkerEdgeColor','none');
+        gnames = figure('Visible','on'); plot(durations,sig_integrals_in,'bo','MarkerSize',12,'MarkerFaceColor','none','MarkerEdgeColor','k');
+        hold on;
+        segtypes = unique(id_flags);
+        for segt = 1:numel(segtypes)
+            ntrials = find(id_flags == segtypes(segt));
+            plot(durations(ntrials),sig_integrals_in(ntrials),'o','MarkerSize',10,'MarkerFaceColor',colors(find(syllables == segtypes(segt)),:),'MarkerEdgeColor','none');
+            [r_tag, p_tag] = corr(durations(ntrials),sig_integrals_in(ntrials)); 
+            disp([segtypes(segt) r_tag, p_tag]);
+        end
         set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral'); title(['(r,p) = ' num2str([r,p])]);
 %         [r1, p1] = corr(durations,sylidx_durations(:,1)); 
 %         figure('Visible','on'); plot(durations,sylidx_durations(:,1),'ro','MarkerSize',10,'MarkerFaceColor','r','MarkerEdgeColor','none');
@@ -437,23 +475,43 @@ end
 if compute_raster == 1
     figure; imagesc(signal_raster); colormap(copper); yticks([]); hold on;   
     %line([2100 2100],[0 size(hits,1)+0.5],'Color','w');
-    zeroidx = 2100*locktoonset + (1-locktoonset)*(size(signal_raster,2)-2100);
+    zeroidx = (100+raster_edges*1000)*locktoonset + (1-locktoonset)*(size(signal_raster,2)-(100+raster_edges*1000));
     for i = 1:size(hits,1)
         for j = 1:size(sequence_onsets,2)
             line([zeroidx+1000*sequence_onsets(i,j) zeroidx+1000*sequence_onsets(i,j)],[i-0.5 i+0.5],'Color','w'); %sylidx_
         end
     end
-    if sort_type ~= 1 
-        segtypes = unique(id_flags);
-        for segt = 1:numel(segtypes)
-            ntrials = find(id_flags == segtypes(segt));% ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
-            plot(zeros(2,1),[ntrials(1)-0.4; ntrials(end)+0.4],'Color',... %numel(ntrials)
-                colors(find(syllables == segtypes(segt)),:),'LineWidth',10);
+    if sort_type ~= -1 
+        if sort_type ~= 1 
+            segtypes = unique(id_flags);
+            for segt = 1:numel(segtypes)
+                ntrials = find(id_flags == segtypes(segt));% ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
+                plot(label_mark_loc*1000*ones(2,1)+zeroidx,[ntrials(1)-0.4; ntrials(end)+0.4],'Color',... %numel(ntrials)
+                    colors(find(syllables == segtypes(segt)),:),'LineWidth',5);
+            end
+        else
+            segtypes = id_flags;
+            for segt = 1:numel(segtypes)
+                %ntrials = find(id_flags == segtypes(segt));% ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
+                plot(label_mark_loc*1000*ones(2,1)+zeroidx,[segt-0.4; segt+0.4],'Color',... %numel(ntrials)
+                    colors(find(syllables == segtypes(segt)),:),'LineWidth',5);
+            end
+        end
+        if ~isempty(add_sort_crit)
+           segtypes = hits(:,[3+add_sort_crit]);
+           outvars.segtypes = segtypes;
+            for segt = 1:size(segtypes,1)
+                for itrnum = 1:size(segtypes,2)
+                    %ntrials = find(id_flags == segtypes(segt));% ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
+                    plot(sort_crit_loc*1000*ones(2,1)+zeroidx+(itrnum-1)*50,[segt-0.4; segt+0.4],'Color',... %numel(ntrials)
+                        colors(find(syllables == segtypes(segt,itrnum)),:),'LineWidth',3);
+                end
+            end 
         end
     end
     %
     if locktoonset == 1
-        xticks([2100 3100]); xticklabels([0 1]);
+        xticks(raster_edges*1000+[100 1100]); xticklabels([0 1]);
     else
         xticks([zeroidx-1000 zeroidx]); xticklabels([-1 0]);
     end
@@ -470,7 +528,6 @@ function resid = linear_res(vec_a,vec_b)
     alpha = mean(vec_a) - beta*mean(vec_b);
     resid = vec_a - alpha - beta*vec_b;
 end
-
 
 % function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
 %     if isempty(phrases.phraseType)
