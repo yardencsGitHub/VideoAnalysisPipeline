@@ -50,6 +50,10 @@ ROIs = 0;
 reference_tag = -1;
 set_bg_to_level_zero = 0;
 intensity_gain = 1.0;
+saturation_sigm_threshold = 0.5;
+saturation_sigm_power = 10;
+nonlinear_stretch = 0;
+patch_coor = [300 300];
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
@@ -92,6 +96,14 @@ for i=1:2:nparams
             set_bg_to_level_zero = varargin{i+1};
         case 'intensity_gain'
             intensity_gain = varargin{i+1};
+        case 'nonlinear_stretch'
+            nonlinear_stretch = 1;
+            temp_stretch = varargin{i+1};
+            saturation_sigm_threshold = temp_stretch(1);
+            saturation_sigm_power = temp_stretch(2);
+        case 'patch_coor'
+            patch_coor = varargin{i+1};
+            
     end
 end
             
@@ -344,7 +356,14 @@ min_pixel_value = quantile(reshape(sqrt(sum(I.*I,3)),1,640*480),min_pixel_value)
 %I(sqrt(sum(I.*I,3)) < min_pixel_value,:) = 0;
 I = I.*repmat(sqrt(sum(I.*I,3)) > min_pixel_value,1,1,3);
 I = I - min_pixel_value/sqrt(3); I(I<0)=0;
+% stretch colors uniformly
+
+
 I = I/max(max(sqrt(sum(I.*I,3))))*sqrt(3)*intensity_gain; %
+if (nonlinear_stretch == 1)
+    I1 = rgb2hsv(I); I1(:,:,2) = 1./(1+exp(-(I1(:,:,2)-saturation_sigm_threshold)*saturation_sigm_power));
+    I = hsv2rgb(I1);
+end
 figure('Position',[1308         682         770         551]); imshow(I); %/max(I(:))*1.0);
 hold on;
 if ~ismember(0,ROIs)
@@ -355,7 +374,7 @@ if ~ismember(0,ROIs)
         end
     end
 end
-patch(300+[0 50*5/6 50*5/6 0],200+ [0 0 5 5],'w');
+patch(patch_coor(1)+[0 50*5/6 50*5/6 0],patch_coor(2)+ [0 0 5 5],'w');
 xticks([]); yticks([]);
 hndls = [hndls gca];
 
@@ -365,7 +384,8 @@ maxcol = max(max(sqrt(sum(I1.^2,3))));
 for layernum = 1:numel(tags_to_color)
     subplot(1,numel(tags_to_color),layernum);
     %maxcol = max(max(sum(I1.*repmat(reshape(base_colors{layernum},1,1,3),480,640),3)))/sqrt(sum(base_colors{layernum}.^2));
-    newI = base_colors{layernum}'*[0:maxcol/24:maxcol];
+    %newI = base_colors{layernum}'*[0:maxcol/24:maxcol];
+     newI = base_colors{layernum}'*1./(1+exp(-([0:maxcol/24:maxcol]-saturation_sigm_threshold)*saturation_sigm_power));
     imshow(reshape(newI',25,1,3));
 end
 

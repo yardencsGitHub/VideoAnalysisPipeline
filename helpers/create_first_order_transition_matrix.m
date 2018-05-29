@@ -1,4 +1,4 @@
-function [resmat, state_count, state_labels] = create_first_order_transition_matrix(path_to_annotation_file,ignore_dates,ignore_entries,join_entries,to_normalize,include_zero)
+function [resmat, state_count, state_labels] = create_first_order_transition_matrix(path_to_annotation_file,ignore_dates,ignore_entries,join_entries,to_normalize,include_zero,varargin)
 % This script takes an annotation file and returns a square matrix of
 % either normalized or non-normalized transition matrix
 % Inputs:
@@ -16,8 +16,17 @@ function [resmat, state_count, state_labels] = create_first_order_transition_mat
 %   to j.
 %   state_count - # of times each label is encountered.
 %   state_labels - the lables of the matrix
-MaxSep = 0.5; % maximal phrase separation within a bout (sec)
-
+MaxSep = 0.25; % maximal phrase separation within a bout (sec)
+use_idx = [];
+nparams=length(varargin);
+for i=1:2:nparams
+	switch lower(varargin{i})
+		case 'maxsep'
+			MaxSep=varargin{i+1};
+        case 'use_idx'
+            use_idx=varargin{i+1};
+    end
+end
 if ~exist(path_to_annotation_file)
     resmat = [];
     state_labels = [];
@@ -67,6 +76,11 @@ for fnum = 1:numel(keys)
         '4';
         continue;
     end
+    tokens = regexp(keys{fnum},'_','split');
+    if ~isempty(use_idx) && ~ismember(str2num(tokens{2}),use_idx)
+        continue;
+    end
+       
     element = elements{fnum};
     locs = find(ismember(element.segType,ignore_entries));
     element.segAbsStartTimes(locs) = [];

@@ -1,4 +1,4 @@
-function res_phrases = collect_sustained_segments(sustained,daynums)
+function [res_phrases,decay_time_constants,decay_edges] = collect_sustained_segments(sustained,daynums)
 flags = 0;
 % first run 'locate_sustained_activity.m'
 %%
@@ -91,6 +91,8 @@ dates = dates(indx,:);
 unique_dates = datestr(setdiff(unique(datenum(dates)),datenum(ignore_dates)),'yyyy_mm_dd'); %does not include 04/19th (remove for other birds)
 %%
 res_phrases = [];
+decay_time_constants = [];
+decay_edges = [];
 for daynum_cnt = 1:numel(daynums)
     daynum = daynums(daynum_cnt);
     disp(daynum);
@@ -206,6 +208,7 @@ for daynum_cnt = 1:numel(daynums)
             dec_fits=zeros(size(subsignal));
             for dec_num = 1:numel(decrease_locs)
                 dec_signal = subsignal(map_on(decrease_locs(dec_num)):map_off(decrease_locs(dec_num)));
+                dec_signal_t = curr_t(map_on(decrease_locs(dec_num)):map_off(decrease_locs(dec_num)));
                 min_dec_sig = min(dec_signal);
                 dec_signal = dec_signal - min_dec_sig;
                 dec_t = [1:numel(dec_signal)]'/30;
@@ -213,10 +216,12 @@ for daynum_cnt = 1:numel(daynums)
                     beta = fminunc(@(x)sum((dec_signal-x(1)*(dec_t<x(2))-x(1)*exp(-(dec_t-x(2))/x(3)).*(dec_t>=x(2))).^2),[0.3 0.2 1]);
                     dec_fits(map_on(decrease_locs(dec_num)):map_off(decrease_locs(dec_num))) = ...
                         beta(1)*(dec_t<beta(2))+beta(1)*exp(-(dec_t-beta(2))/beta(3)).*(dec_t>=beta(2))+min_dec_sig;
-                    all_betas = [all_betas; beta(3)];
-                    if beta(3) > 0.5
+                    
+                    if beta(3) > 0.4
+                        all_betas = [all_betas; beta(3)];
                         seg_limits = curr_t([map_on(decrease_locs(dec_num)) map_off(decrease_locs(dec_num))]);
-                        res_phrases = [res_phrases phrases.phraseType(phrases.phraseFileStartTimes < curr_t(2) & phrases.phraseFileEndTimes > curr_t(1))];
+                        decay_edges = [decay_edges;seg_limits];
+                        res_phrases = [res_phrases phrases.phraseType(phrases.phraseFileStartTimes < curr_t(2) & phrases.phraseFileEndTimes > curr_t(1))']; %curr_t
                     end
                 catch emm
                     flags = flags+1;
@@ -232,7 +237,9 @@ for daynum_cnt = 1:numel(daynums)
         end
         %title([sustained(daynum).Day ' roi #' num2str(roi_n) ' syls: ' num2str(all_phrase_types')],'Interpreter','none');
         %figure; hist(all_betas); title([sustained(daynum).Day ' roi #' num2str(roi_n) ],'Interpreter','none');
+    decay_time_constants = [decay_time_constants; all_betas];
     end
+    
     disp(flags)
 end
 function element = trim_element(old_element)

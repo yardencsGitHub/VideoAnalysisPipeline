@@ -291,9 +291,10 @@ sig_integrals_in = [];
 sig_integrals_before = [];
 sig_com_before = [];
 max_signal = 0;
-if (compute_raster == 1)
+if (compute_raster > 0)
     max_sequence_duration = max(sequence_total_lengths);
     signal_raster = zeros(size(hits,1),ceil(max_sequence_duration*1000+200+2000*raster_edges))*nan; 
+    phraseType_raster = signal_raster;
 end
 for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
@@ -364,9 +365,15 @@ for cnt = 1:size(hits,1)
     sig_integrals_before = [sig_integrals_before; ...
         sum(signal((t <= tonset-edges(1)) & (t >= hits(cnt,3))))];
     timetag = (t-tonset*locktoonset-(1-locktoonset)*toffset);
-    if (compute_raster == 1)
+    t_phr_on = (phrases.phraseFileStartTimes-tonset*locktoonset-(1-locktoonset)*toffset);
+    t_phr_off = (phrases.phraseFileEndTimes-tonset*locktoonset-(1-locktoonset)*toffset);
+    if (compute_raster >= 1)
         interpolated_signal = interp1(timetag,signal,timetag(1):0.001:timetag(end)+1/30);
         interpolated_timetag = interp1(timetag,timetag,timetag(1):0.001:timetag(end)+1/30);
+        interpolated_phrase_id = zeros(size(interpolated_timetag));
+        for phnum = 1:numel(phrases.phraseType)
+            interpolated_phrase_id((interpolated_timetag >= t_phr_on(phnum)) & (interpolated_timetag <= t_phr_off(phnum))) = phrases.phraseType(phnum);         
+        end
         idxmap = [1:numel(interpolated_timetag)] - min(find(abs(interpolated_timetag) == min(abs(interpolated_timetag))))+(1000*raster_edges+100)+round((1-locktoonset)*max_sequence_duration*1000);
         t_on = (phrases.phraseFileStartTimes(1)-tonset*locktoonset-(1-locktoonset)*toffset);
         t_off = (phrases.phraseFileEndTimes(end)-tonset*locktoonset-(1-locktoonset)*toffset);
@@ -374,6 +381,7 @@ for cnt = 1:size(hits,1)
                     (interpolated_timetag >= -raster_edges*locktoonset  + (-max_sequence_duration-raster_edges)*(1-locktoonset)) & ...
                     (interpolated_timetag <= raster_edges*(1-locktoonset)+locktoonset*(raster_edges+max_sequence_duration)));
         signal_raster(cnt,idxmap(idxs)) = interpolated_signal(idxs);
+        phraseType_raster(cnt,idxmap(idxs)) = interpolated_phrase_id(idxs);
     end
     
     sig_com_before = [sig_com_before; ...
@@ -482,7 +490,7 @@ if compute_raster == 1
         end
     end
     if sort_type ~= -1 
-        if sort_type ~= 1 
+        if sort_type == -1 
             segtypes = unique(id_flags);
             for segt = 1:numel(segtypes)
                 ntrials = find(id_flags == segtypes(segt));% ntrials(1) = ntrials(1)-0.5; ntrials(end) = ntrials(end)+0.5;
@@ -509,6 +517,40 @@ if compute_raster == 1
             end 
         end
     end
+    %
+    if locktoonset == 1
+        xticks(raster_edges*1000+[100 1100]); xticklabels([0 1]);
+    else
+        xticks([zeroidx-1000 zeroidx]); xticklabels([-1 0]);
+    end
+    hndls = [hndls; gca];
+end
+
+if compute_raster == 2
+    figure; 
+    signal_raster(isnan(signal_raster)) = 0;
+    phraseType_raster(isnan(phraseType_raster)) = 0;
+    for row_num = 1:size(signal_raster,1)
+        line_onsets = find(diff([-500 phraseType_raster(row_num,:)]) ~= 0); 
+        line_offsets = find(diff([phraseType_raster(row_num,:) -500]) ~=0);
+        for line_num = 1:numel(line_onsets)
+            xs = [line_onsets(line_num):line_offsets(line_num) line_offsets(line_num):-1:line_onsets(line_num)];
+            ys = row_num*0.03+[0.01+signal_raster(row_num,line_onsets(line_num):line_offsets(line_num)) zeros(1,numel(line_onsets(line_num):line_offsets(line_num)))-0.01]; %-fliplr(signal_raster(row_num,line_onsets(line_num):line_offsets(line_num)))
+            segt = median(phraseType_raster(row_num,line_onsets(line_num):line_offsets(line_num)));
+            if (segt == 0)
+                col = [0.5 0.5 0.5];
+            else
+                col = colors(find(syllables == segt),:);
+            end
+            fill(xs,ys,col,'LineStyle','none','FaceAlpha',0.5);
+            hold on;
+        end
+    end
+        
+    yticks([]); hold on;   
+    %line([2100 2100],[0 size(hits,1)+0.5],'Color','w');
+    zeroidx = (100+raster_edges*1000)*locktoonset + (1-locktoonset)*(size(signal_raster,2)-(100+raster_edges*1000));
+    
     %
     if locktoonset == 1
         xticks(raster_edges*1000+[100 1100]); xticklabels([0 1]);

@@ -326,6 +326,7 @@ end
 contour(mask,[0.5 0.5],'g');
 hndls = [hndls gca];
 cmap1 = [[0:255 255*ones(1,256)]/256;[0:255 255:-1:0]/256; [255*ones(1,256) 255:-1:0]/256]';
+cmap2 = [[0:255 255*ones(1,256)]/256;[255*ones(1,256) 255:-1:0]/256; [255*ones(1,256) 255:-1:0]/256]';
 % filt_rad = 5; filt_sigma = 4; % lowpass filter
 % h = fspecial('gaussian',filt_rad,filt_sigma);
 mn = cat(3,MaxIm{:});
@@ -363,9 +364,9 @@ for fignum = 1:numel(MaxIm)
     I(abs(I(:)) < quantile(abs(I(:)),quantile_threshold)) = 0;
     figure; imagesc(I);
     if color_map_direction == 1
-        colormap(cmap1);
+        colormap(cmap2);
     else
-        colormap(fliplr(cmap1));
+        colormap(fliplr(cmap2));
     end
     caxis([-lm lm]);
     hold on;
