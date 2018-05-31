@@ -2,29 +2,59 @@ function [sustained,locs] = locate_sustained_activity(birdnum,ignore_dates,ignor
 on_time_thr = 2;
 signal_thr = 0.05;
 
-bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
-bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5'};
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_' 'nonoverlap_newROI_'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_' 'ROI_'};
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_' 'ROI_'};
+
 switch birdnum
-    case 1
-        bird_params = bird1_params;
-    case 2
-        bird_params = bird2_params;
-    case 3
+        case 1
+            %load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Figures/lrb853_colors.mat');
+            bird_params = bird1_params;
+            ignore_dates = {'2017_04_19'};
+            ignore_entries = [-1 100 102 101 103 202 406 402 403 408 409];
+            join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
+            if isempty(include_zero)
+                include_zero = 1;
+            end
+        case 2
+            %load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Figures/lbr3022_colors.mat');
+            bird_params = bird2_params;
+            %'2017_04_05' '2017_04_06'  '2017_04_11' '2017_04_12' '2017_04_16'
+            %'2017_04_20' '2017_04_21' '2017_04_23' '2017_04_25' '2017_04_26' '2017_04_30' '2017_05_03'
+            ignore_dates = {'2017_04_14' '2017_04_27' };
+            ignore_entries = [-1 100 102 101 103];
+            join_entries = {[2 206]}; %{[207 307 407] [404 405] [208 209] [200 309]};
+            if isempty(include_zero)
+                include_zero = 1;
+            end
+        case 3
+            bird_params = bird3_params;
+            ignore_dates = {'2017_04_27' '2017_04_28' '2017_06_05' '2017_06_06' '2017_06_07' '2017_06_08' '2017_06_09' '2017_06_12' '2017_06_13' ... 
+                '2017_06_14' '2017_06_15' '2017_06_16' '2017_06_19' '2017_06_20' '2017_06_21' '2017_06_22' '2017_06_27' ...
+                '2017_06_28' '2017_06_29' '2017_06_30' '2017_07_03' '2017_07_04' '2017_07_06' '2017_07_07' '2017_07_10' ...
+                '2017_07_11' '2017_07_12' '2017_07_13' '2017_07_14' '2017_07_18' '2017_07_19' '2017_07_20' '2017_07_21'};
+            ignore_entries = [-1 100 102 101 103];
+            join_entries = {};
+            if isempty(include_zero)
+                include_zero = 0;
+            end
 end
+    
 bird_name = bird_params{1}; % 'lrb85315'; %'lbr3022'; %
 bird_folder_name = bird_params{2}; %'lrb853_15'; %'lbr3022'; %
 template_file = bird_params{3}; %'lrb85315template'; %'lbr3022_template';%
 annotation_file = bird_params{4};
+file_prefix = bird_params{5};
 
 if isempty(ignore_dates)
     ignore_dates = {'2017_04_19'};
 end
-if isempty(ignore_entries)
-   ignore_entries = [-1 100 102 101 103 202 406 408 409 402 403];
-end
-if isempty(join_entries)
-    join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
-end
+% if isempty(ignore_entries)
+%    ignore_entries = [-1 100 102 101 103 202 406 408 409 402 403];
+% end
+% if isempty(join_entries)
+%     join_entries = {[207 307 407] [404 405] [208 209] [200 309]};
+% end
 
 clear results;
 zscoring_type = 0;
@@ -43,9 +73,7 @@ spikes = 2;
 if isempty(edges)
     edges = [0.1 0.1]; %[0.5 0.5];
 end
-if isempty(include_zero)
-    include_zero = 1;
-end
+
 opacity_factor = 0.4;
 max_phrase_gap = 0.5;
 
@@ -104,7 +132,7 @@ dff = [];
 for Day_num = 1: size(unique_dates,1)
     Day = unique_dates(Day_num,:);
     cd([laptop_manualROI_folder '/ROIdata/' Day]);
-    FILES = dir('NonoverlapBaseROIdata*.mat');
+    FILES = dir([file_prefix '*.mat']);
     FILES = {FILES.name};
     load(FILES{1});
     sus = repmat({{}},size(dff,1),1);
