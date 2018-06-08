@@ -4,7 +4,7 @@ bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009_annotation_4
 hvc_offset = 0.04;
 max_phrase_gap = 0.5;
 
-birdnum = 1;
+birdnum = 3;
 switch birdnum
     case 1
         bird_params = bird1_params;
@@ -40,6 +40,7 @@ TargetDir = ['/Users/yardenc/Documents/Experiments/Imaging/CanaryData/' bird_fol
 load(fullfile('/Users/yardenc/Documents/Experiments/Imaging/CanaryData/',bird_folder_name, 'movs','wav',annotation_file));
 
 for fnum = 1:numel(keys)
+    try
     fname = keys{fnum};
     tokens = regexp(keys{fnum},'_','split');
     Daystr =  char(join(tokens(3:5),'_'));
@@ -78,4 +79,7 @@ for fnum = 1:numel(keys)
     target_fname = ['PhraseMaxProj_' fname(1:end-3) 'mat'];
     save(fullfile(TargetDir,target_fname),'phrases');
     display(['done: ' fullfile(TargetDir,target_fname)]);
+    catch emm
+        disp(fname);
+    end
 end

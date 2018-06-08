@@ -12,15 +12,20 @@ base_struct = struct('exper',expr, ...
                      'fs',48000, ...
                      'drugstatus', 'No Drug', ...
                      'directstatus', 'Undirected');
+
 load(path_estimates);
 load(path_templates);
 syllables = [templates.wavs.segType];
 num_files = numel(keys);
-elements = {};
+elements = params.elements;
+newelements = {};
 tempkeys = {};
 dt = 1/3.692307692307692e+02;
+dt = 1/370.5882;
+
 cnt = 1;
 for fnum = 1:num_files  
+    oldcnt = find(cellfun(@(x)strcmp(x,[keys{fnum}(1:end-3) 'wav']),params.keys));
     temp = regexp(keys{fnum},'_','split');
     x = estimates{fnum};
     x = [0 x 0];
@@ -37,30 +42,39 @@ for fnum = 1:num_files
         for sylnum = 1:numel(y)
             y(sylnum) = mode(estimates{fnum}(syl_onset(sylnum):syl_offset(sylnum)-1));
         end
-        
-        elements{cnt} = base_struct;
-        elements{cnt}.filenum = temp{2};
-        elements{cnt}.segFileStartTimes = (syl_onset - 1) * dt;
-        elements{cnt}.segAbsStartTimes = time + elements{cnt}.segFileStartTimes/(24*60*60);
-        elements{cnt}.segFileEndTimes = (syl_offset - 1) * dt;
-        elements{cnt}.segType = syllables(y)';
-     
-        tempkeys{cnt} = [keys{fnum}(1:end-3) 'wav'];
-        cnt = cnt + 1;  
+        if ~isempty(oldcnt)
+            elements{oldcnt}.segFileStartTimes = (syl_onset - 1) * dt;
+            elements{oldcnt}.segAbsStartTimes = time + elements{cnt}.segFileStartTimes/(24*60*60);
+            elements{oldcnt}.segFileEndTimes = (syl_offset - 1) * dt;
+            elements{oldcnt}.segType = syllables(y)';
+        else
+            newelements{cnt} = base_struct;
+            newelements{cnt}.filenum = temp{2};
+            newelements{cnt}.segFileStartTimes = (syl_onset - 1) * dt;
+            newelements{cnt}.segAbsStartTimes = time + elements{cnt}.segFileStartTimes/(24*60*60);
+            newelements{cnt}.segFileEndTimes = (syl_offset - 1) * dt;
+            newelements{cnt}.segType = syllables(y)';
+
+            tempkeys{cnt} = [keys{fnum}(1:end-3) 'wav'];
+            cnt = cnt + 1;  
+        end
     else
-        elements{cnt} = base_struct;
-        elements{cnt}.filenum = temp{2};
-        elements{cnt}.segFileStartTimes = [];
-        elements{cnt}.segAbsStartTimes = [];
-        elements{cnt}.segFileEndTimes = [];
-        elements{cnt}.segType = [];
-     
-        tempkeys{cnt} = [keys{fnum}(1:end-3) 'wav'];
-        cnt = cnt + 1;
+        if isempty(oldcnt)
+            newelements{cnt} = base_struct;
+            newelements{cnt}.filenum = temp{2};
+            newelements{cnt}.segFileStartTimes = [];
+            newelements{cnt}.segAbsStartTimes = [];
+            newelements{cnt}.segFileEndTimes = [];
+            newelements{cnt}.segType = [];
+
+            tempkeys{cnt} = [keys{fnum}(1:end-3) 'wav'];
+            cnt = cnt + 1;
+        end
     end
 end
 
-keys = tempkeys;
+keys = [params.keys; tempkeys];
+elements = [elements; newelements];
 end
 
 function time = getFileTime(filename)
