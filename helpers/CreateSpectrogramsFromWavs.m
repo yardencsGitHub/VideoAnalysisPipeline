@@ -6,7 +6,8 @@ DIR = pwd;
 load(keysinfile);
 %% repositories
 % addpath(genpath('/Users/tonatiuh/Documents/GitHub'));
-addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub'));
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub'),'-end');
+addpath(genpath('/Users/yardenc/Documents/GitHub/zftftb'),'-end');
 %% Create spectrogram image data
 % create spectrograms
 % save gif,mat,
