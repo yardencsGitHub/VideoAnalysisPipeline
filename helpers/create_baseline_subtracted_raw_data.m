@@ -1,4 +1,4 @@
-function create_baseline_subtracted_raw_data(birdnum)
+function create_baseline_subtracted_raw_data(birdnum,varargin)
 
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa'};
@@ -17,6 +17,15 @@ bird_folder_name = bird_params{2};
 template_file = bird_params{3}; 
 annotation_file = bird_params{4}; 
 
+nparams=length(varargin);
+temporal_smooth = 0;
+for i=1:2:nparams
+	switch lower(varargin{i})
+		case 'temporal_smooth'
+			temporal_smooth = varargin{i+1};
+    end
+end
+
 SourceDir = ['/Volumes/home/Data/Imaging/' bird_folder_name '/RawData'];
 TargetDir = ['/Volumes/home/Data/Imaging/' bird_folder_name '/BaselineSubtractedRawData'];
 
@@ -32,6 +41,9 @@ for fnum = 1:numel(d)
     load(fullfile(SourceDir,fname));
     Y = vidMat;
     base = imfilter(Y,h,'circular','replicate');
+    if (temporal_smooth == 1)
+        base = convn(base, reshape([1 1 1] / 3, 1, 1, []), 'same');
+    end
     c = Y-base;
     c = c-min(c(:));
     %dffMat = bsxfun(@rdivide,bsxfun(@minus,c,quantile(c,0.05,3)),quantile(c,0.05,3));
