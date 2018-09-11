@@ -48,7 +48,7 @@ for fnum = 1:numel(d)
     c = c-min(c(:));
     %dffMat = bsxfun(@rdivide,bsxfun(@minus,c,quantile(c,0.05,3)),quantile(c,0.05,3));
     BGlessVidMat = c;
-    new_fname = ['BGless_' fname];
+    new_fname = ['spatiotemporalsmoothBGless_' fname];
     save(fullfile(TargetDir,new_fname),'BGlessVidMat','vidTimes','-v7.3');
     display(fname);
 end
