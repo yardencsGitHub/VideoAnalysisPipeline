@@ -1,6 +1,6 @@
 function [results,syllables] = locate_roi_phrased_locked_activity_types(birdnum,ignore_dates,ignore_entries,join_entries,include_zero,varargin)
 % Prerequisit: Run HMM_matlab to extract the signal vs noise segments
-bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata'};
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
 switch birdnum
@@ -74,6 +74,8 @@ for i=1:2:nparams
 			use_residuals=varargin{i+1};
         case 'min_num_active_bins'
 			min_num_active_bins=varargin{i+1};
+        case 'spikes'
+			spikes=varargin{i+1};        
     end
 end
 bird_name = bird_params{1}; % 'lrb85315'; %'lbr3022'; %

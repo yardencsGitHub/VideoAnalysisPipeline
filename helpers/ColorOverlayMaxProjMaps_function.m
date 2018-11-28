@@ -340,7 +340,7 @@ mn = imfilter(mn,h,'circular','replicate');
 I = zeros(480,640,3); 
 maxnorm = 0;
 for layernum = 1:numel(tags_to_color)
-    Iaddition = nanmean(mn(:,:,ismember(id_flags,tags_to_color{layernum})),3);
+    Iaddition = nanmean(mn(:,:,ismember(id_flags,tags_to_color{layernum})),3); % mean or median?
     if set_bg_to_level_zero ~= 0
         Iaddition = Iaddition - quantile(Iaddition(:),set_bg_to_level_zero); %Iaddition(Iaddition(:)<0)=0;
     end

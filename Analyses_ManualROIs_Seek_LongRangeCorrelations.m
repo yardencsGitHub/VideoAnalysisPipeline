@@ -4,10 +4,16 @@
 % [trans2, state_labels] = create_second_order_transition_matrix(path_to_annotation_file,ignore_dates,ignore_entries,join_entries,to_normalize,include_zero)
 % locate_roi_phrased_locked_activity_types (shoud be turned into a function
 % ...
+
+%% repositories
+addpath(genpath('/Users/yardenc/Documents/GitHub/BirdSongBout'),'-end');
+addpath(genpath('/Users/yardenc/Documents/GitHub/pmtk3'),'-end');
+addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'),'-end');
+%%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
-birdnum = 1;
+birdnum = 3;
 switch birdnum
     case 1
         bird_params = bird1_params;
@@ -60,9 +66,11 @@ end
 
 
 %%
+clc;
  [resmat, state_count, state_labels] = create_first_order_transition_matrix(path_to_annotation_file,ignore_dates,ignore_entries,join_entries,to_normalize,include_zero);
  [trans2, ~] = create_second_order_transition_matrix(path_to_annotation_file,ignore_dates,ignore_entries,join_entries,to_normalize,include_zero);
- [results,syllables] = locate_roi_phrased_locked_activity_types(birdnum,ignore_dates,ignore_entries,join_entries,include_zero);
+ [results,syllables] = locate_roi_phrased_locked_activity_types(birdnum,ignore_dates,ignore_entries,join_entries,include_zero,'spikes',0);
+ disp('done');
 %% Analysis - seek activity-centric correlations
 % 1. look for phrases in which there is activity (hmm + high max)
 % edges should be a parameter,
@@ -117,8 +125,9 @@ for daynum = 1:numel(results)
             % previous phrase type
             
             h=figure('Position',[360    61   560   637],'Visible','off');
-            ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum nan],roinum,1,0,[-3], ...
-                'edges',[0 0],'use_residuals',0,'display_opt',0,'bird_number',3);
+            
+            ax = subplot(2,1,1); [hndls,r,p,gnames, outvars] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum nan],roinum,1,0,[-3], ...
+                'edges',[0.1 0],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
             if p<0.05
 %                 f = gcf;
 %                 h1 = get(ax,'Parent');
@@ -126,7 +135,17 @@ for daynum = 1:numel(results)
                 figure(h);
                 h2 = subplot(2,1,2);
                 c = copyobj(get(hndls(2),'Children'),h2);
-                title(['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)]);
+                titlestr = ['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)];
+                
+                if numel(outvars.COMPARISON(:)) > 1
+                    sigcomp = find(outvars.COMPARISON(:,6) < 0.05);
+                    for sigcnt = 1:numel(sigcomp)
+                        addstr = [', d' num2str(outvars.COMPARISON(sigcomp(sigcnt),1)) ...
+                            ',' num2str(outvars.COMPARISON(sigcomp(sigcnt),2)) '~' num2str(sign(outvars.COMPARISON(sigcomp(sigcnt),4)))];
+                        titlestr = [titlestr addstr];
+                    end
+                end
+                title(titlestr);
                 xticks(1:numel(gnames)); xticklabels(gnames);
                 display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                     num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
@@ -144,8 +163,8 @@ end
 %% 1-2 look for phrases in which there is activity (hmm + high max) and correlated to prev phrase identity
 targetdir = ['/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/' bird_folder_name ...
     '/ManualROIs/LongRangeCorrelations/PrevIdVsSignal'];
-signal_thr = 0.05;
-hmm_thr = 0.05;
+signal_thr = 0.1;
+hmm_thr = 0.1;
 clc;
 display('Signal relation to previous phrase:');
 for daynum = 1:numel(results)
@@ -156,8 +175,8 @@ for daynum = 1:numel(results)
             % previous phrase type
             
             h=figure('Position',[360    61   560   637],'Visible','off');
-            ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum nan],roinum,1,0,[-1], ...
-                'edges',[0 0],'use_residuals',0,'display_opt',0,'bird_number',3);
+            ax = subplot(2,1,1); [hndls,r,p,gnames, outvars] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum nan],roinum,1,0,[-1], ...
+                'edges',[0 0],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
             if p<0.05
 %                 f = gcf;
 %                 h1 = get(ax,'Parent');
@@ -165,7 +184,17 @@ for daynum = 1:numel(results)
                 figure(h);
                 h2 = subplot(2,1,2);
                 c = copyobj(get(hndls(2),'Children'),h2);
-                title(['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)]);
+                titlestr = ['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)];
+                
+                if numel(outvars.COMPARISON(:)) > 1
+                    sigcomp = find(outvars.COMPARISON(:,6) < 0.05);
+                    for sigcnt = 1:numel(sigcomp)
+                        addstr = [', d' num2str(outvars.COMPARISON(sigcomp(sigcnt),1)) ...
+                            ',' num2str(outvars.COMPARISON(sigcomp(sigcnt),2)) '~' num2str(sign(outvars.COMPARISON(sigcomp(sigcnt),4)))];
+                        titlestr = [titlestr addstr];
+                    end
+                end
+                title(titlestr);
                 xticks(1:numel(gnames)); xticklabels(gnames);
                 display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                     num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
@@ -199,7 +228,7 @@ for daynum = 1:numel(results)
                 post_sylnum = state_labels(post_types(post_cnt));
                 h=figure('Position',[360    61   560   637],'Visible','off');
                 ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum post_sylnum],roinum,1,0,[3], ...
-                'edges',[2 0],'use_residuals',0,'display_opt',0,'bird_number',3);
+                'edges',[2 0],'use_residuals',0,'display_opt',0,'bird_number',1);
                 if p<0.05
 %                     f = gnames;
 %                     h1 = get(ax,'Parent');
@@ -263,7 +292,7 @@ for daynum = 1:numel(results)
                     
                     display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                         num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                    outputfilename = fullfile(targetdir,['signal2rev_duration_pearson_Date_' results(daynum).Date ...
+                    outputfilename = fullfile(targetdir,['signal2prev_duration_pearson_Date_' results(daynum).Date ...
                         '-roi' num2str(roinum) '-syllables ' ...
                         num2str(prev_sylnum) '-->' num2str(sylnum) '.png']);
                     saveas(h,outputfilename);
@@ -296,7 +325,7 @@ for daynum = 1:numel(results)
                 post_sylnum = state_labels(post_types(post_cnt));
                 h=figure('Position',[360    61   560   637],'Visible','off');
                 ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum post_sylnum nan],roinum,1,0,[-4], ...
-                    'edges',[0 0.2],'use_residuals',0,'display_opt',0,'bird_number',3);
+                    'edges',[0.2 0.0],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
                 if p<0.05
                     xlim(ax,[-2 5]);
 %                     f = gcf;
@@ -308,7 +337,18 @@ for daynum = 1:numel(results)
                     figure(h);
                     h2 = subplot(2,1,2);
                     c = copyobj(get(hndls(2),'Children'),h2);
-                    title(['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)]);
+                    %title(['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)]);
+                    titlestr = ['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)];
+                
+                    if numel(outvars.COMPARISON(:)) > 1
+                        sigcomp = find(outvars.COMPARISON(:,6) < 0.05);
+                        for sigcnt = 1:numel(sigcomp)
+                            addstr = [', d' num2str(outvars.COMPARISON(sigcomp(sigcnt),1)) ...
+                                ',' num2str(outvars.COMPARISON(sigcomp(sigcnt),2)) '~' num2str(sign(outvars.COMPARISON(sigcomp(sigcnt),4)))];
+                            titlestr = [titlestr addstr];
+                        end
+                    end
+                    title(titlestr);
                     xticks(1:numel(gnames)); xticklabels(gnames); 
                     display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                         num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
@@ -328,7 +368,7 @@ end
 %% 3-2 look for phrases in which there is activity (hmm + high max) 
 % % AND go over transition types (with occurance > 0.1) and correlated to
 % % 2n prev phrase identity
-trimmed_labels = state_labels(2:end-1);
+%trimmed_labels = state_labels(2:end-1);
 targetdir = ['/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/' bird_folder_name ...
     '/ManualROIs/LongRangeCorrelations/Prev2ndIdVsSignal'];
 signal_thr = 0.05;
@@ -346,8 +386,8 @@ for daynum = 1:numel(results)
             for prev_cnt = 1:numel(prev_types)
                 prev_sylnum = state_labels(prev_types(prev_cnt));
                 h=figure('Position',[360    61   560   637],'Visible','off');
-                ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,3,[nan prev_sylnum sylnum nan],roinum,1,0,[-1], ...
-                    'edges',[0.2 0],'use_residuals',0,'display_opt',0,'bird_number',3);
+                ax = subplot(2,1,1); [hndls,r,p,gnames, outvars] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,3,[nan prev_sylnum sylnum nan],roinum,1,0,[-1], ...
+                    'edges',[0.0 0.2],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
                 if p<0.05
                     xlim(ax,[-5 2]);
 %                     f = gcf;
@@ -356,14 +396,27 @@ for daynum = 1:numel(results)
 %                     figure(h1);
 %                     h2 = subplot(2,1,2);
 %                     c = copyobj(get(fx,'Children'),h2);
+
+
                     figure(h);
                     h2 = subplot(2,1,2);
                     c = copyobj(get(hndls(2),'Children'),h2);
-                    title(['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)]);
+                    %title(['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)]);
+                    titlestr = ['1 way ANOVA: F =' num2str(r) ', p = ' num2str(p)];
+                
+                    if numel(outvars.COMPARISON(:)) > 1
+                        sigcomp = find(outvars.COMPARISON(:,6) < 0.05);
+                        for sigcnt = 1:numel(sigcomp)
+                            addstr = [', d' num2str(outvars.COMPARISON(sigcomp(sigcnt),1)) ...
+                                ',' num2str(outvars.COMPARISON(sigcomp(sigcnt),2)) '~' num2str(sign(outvars.COMPARISON(sigcomp(sigcnt),4)))];
+                            titlestr = [titlestr addstr];
+                        end
+                    end
+                    title(titlestr);
                     xticks(1:numel(gnames)); xticklabels(gnames); 
                     display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                         num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                    outputfilename = fullfile(targetdir,['signal2post_2nd_Id_anova_Date_' results(daynum).Date ...
+                    outputfilename = fullfile(targetdir,['signal2prev_2nd_Id_anova_Date_' results(daynum).Date ...
                         '-roi' num2str(roinum) '-syllable' ...
                         num2str(prev_sylnum) '-->' num2str(sylnum) '.png']);
 

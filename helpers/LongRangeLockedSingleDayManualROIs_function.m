@@ -34,6 +34,7 @@ bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotati
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
 bird_params = bird2_params;
+outvars.flag = 1;
 delete_frames = 1;
 n_del_frames = 6;
 hvc_offset = 0.04;
@@ -47,6 +48,7 @@ label_mark_loc = 0;
 flag_loc_for_durations = 1;
 add_sort_crit = [];
 sort_crit_loc = 0.5;
+multicomp = 0;
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
@@ -88,6 +90,8 @@ for i=1:2:nparams
             add_sort_crit = varargin{i+1}; 
         case 'sort_crit_loc'
             sort_crit_loc = varargin{i+1};
+        case 'multicomp'
+            multicomp = varargin{i+1};
             
     end
 end
@@ -430,6 +434,7 @@ for cnt = 1:size(hits,1)
 end
 r=[]; p=[]; 
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
+
 if ~isempty(durations) & (extra_stat == 1)
     if use_residuals > 0
         try
@@ -449,11 +454,23 @@ if ~isempty(durations) & (extra_stat == 1)
     end
     outvars.sig_integrals_in = sig_integrals_in;
     if sort_type ~= 1 
+        
         [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
         boxplot(sig_integrals_in,id_flags);
+        hndls = [hndls; gca];
         r = ANOVATAB{2,5};
         gnames = STATS.gnames;
         outvars.id_flags = id_flags;
+        if (multicomp == 1 && p < 0.05)
+            figure;
+            try
+                outvars.COMPARISON = multcompare(STATS);
+            catch em
+                outvars.COMPARISON = nan;
+            end
+        else
+            outvars.COMPARISON = nan;
+        end
         %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
@@ -468,6 +485,7 @@ if ~isempty(durations) & (extra_stat == 1)
             disp([segtypes(segt) r_tag, p_tag]);
         end
         set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral'); title(['(r,p) = ' num2str([r,p])]);
+        hndls = [hndls; gca];
 %         [r1, p1] = corr(durations,sylidx_durations(:,1)); 
 %         figure('Visible','on'); plot(durations,sylidx_durations(:,1),'ro','MarkerSize',10,'MarkerFaceColor','r','MarkerEdgeColor','none');
 %         set(gca,'FontSize',16); xlabel('Durations'); ylabel('idx durations'); title(['(r,p) = ' num2str([r1,p1])]);
@@ -476,7 +494,7 @@ if ~isempty(durations) & (extra_stat == 1)
 %         set(gca,'FontSize',16); xlabel('sig.integral'); ylabel('onset'); title(['(r,p) = ' num2str([r1,p1])]);
         
     end
-    hndls = [hndls; gca];
+    
 else
     p = 1; r = 0; gnames = numel(durations);
 end
