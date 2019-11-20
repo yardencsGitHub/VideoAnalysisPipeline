@@ -1,4 +1,4 @@
-function hndls = Analyses_create_PSTs(birdnum) 
+function hndls = Analyses_create_cross_validated_PSTs(birdnum) 
 %% Create PSTs for canaries lrb85314, lbr3022, (lbr3009)
 % This script creates the PSTs and figures
 % To reduce noise some rare syllables are removed (the variable 'ignore_entries') and the criterion for
@@ -54,26 +54,35 @@ switch birdnum
         
 end
 %%
-[DATA, syls] = convert_annotation_to_pst(path_to_annotation,ignore_dates,ignore_entries,join_entries,1*(birdnum<3),2);
+ [DATA, syls] = convert_annotation_to_pst(path_to_annotation,ignore_dates,ignore_entries,join_entries,1*(birdnum<3),2);
+ cv_store=pst_cross_validate(DATA,'L',5);
 % 
-disp(['# of DATA strings: ' num2str(numel(DATA))]); 
-[F_MAT ALPHABET N PI]=pst_build_trans_mat(DATA,5);
-TREE = pst_learn(F_MAT,ALPHABET,N,'L',5,'g_min',0.0075);
+% [F_MAT ALPHABET N PI]=pst_build_trans_mat(DATA,5);
+% TREE = pst_learn(F_MAT,ALPHABET,N,'L',5);
 
 %%
 syl_labels = mat2cell(syls',ones(numel(syls),1),1);
 %%
-hndls = [];
-for rootnode = 1:numel(TREE(2).string)
-    display(['Main branch: Syllble #' num2str(syls(TREE(2).string{rootnode}))]);
-    figure; h_pie=pie(double(TREE(2).g_sigma_s(:,rootnode)),zeros(1,numel(syls)),cellfun(@num2str,syl_labels,'UniformOutput',0));
-    for cnt = 2:2:numel(h_pie)
-        h_pie(cnt).FontSize = 16;
-        h_pie(cnt-1).FaceColor = colors(color_tags == str2num(h_pie(cnt).String),:);
+[ni,nj,nk] = size(cv_store.tree);
+for i = 1:ni
+    for j = 1:nj
+        for k = 1:nk
+            TREE = cv_store.tree{i,j,k};
+            hndls = [];
+            for rootnode = 1:numel(TREE(2).string)
+                display(['Main branch: Syllble #' num2str(syls(TREE(2).string{rootnode}))]);
+                figure; h_pie=pie(double(TREE(2).g_sigma_s(:,rootnode)),zeros(1,numel(syls)),cellfun(@num2str,syl_labels,'UniformOutput',0));
+                for cnt = 2:2:numel(h_pie)
+                    h_pie(cnt).FontSize = 16;
+                    h_pie(cnt-1).FaceColor = colors(color_tags == str2num(h_pie(cnt).String),:);
+                end
+                title(['Root: ' num2str(syls(TREE(2).string{rootnode}))]);
+                hndls = [hndls h_pie];
+                explore_branch(birdnum,TREE,syls,2,rootnode);
+            end
+            '8';
+        end
     end
-    title(['Root: ' num2str(syls(TREE(2).string{rootnode}))]);
-    hndls = [hndls h_pie];
-    explore_branch(birdnum,TREE,syls,2,rootnode);
 end
     
 function explore_branch(bnum,TREE,syls,level_num,branch_num)

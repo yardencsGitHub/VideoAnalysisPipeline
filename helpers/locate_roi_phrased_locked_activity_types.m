@@ -147,6 +147,7 @@ for Day_num = 1: size(unique_dates,1)
     results_ratio_max = [];
     results_ratio_std = [];
     results_hmm = [];
+    results_hmm_counter = [];
     results_hmm_out = [];
     results_hmm_time = [];
     results_hmm_time_out = [];
@@ -260,13 +261,25 @@ for Day_num = 1: size(unique_dates,1)
                 for roi_n = 1:size(dff,1)
 
                     if spikes < 2
-                        [c, s, options] = deconvolveCa(detrend(y(roi_n,:)),'ar1',g,'method','constrained-foopsi');
+                        %[c, s, options] = deconvolveCa(detrend(y(roi_n,:)),'ar1',g,'method','constrained-foopsi');
+                        try 
+                            [c, s, options] = deconvolveCa(y(roi_n,:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin');%,'optimize_pars');
+                        catch em
+                            try
+                            [c, s, options] = deconvolveCa((y(roi_n,:)),'ar2','method','foopsi','optimize_b',1);
+                            catch emm
+                                'g'
+                            end
+                        end
+                    
                     end
                     switch spikes
                         case 1
                             signal = s;
                         case 0
                           signal = c; %smooth(s(ROIs(roi_n),:),3);  
+                          signal = c + options.b*(options.b < 0);
+                          
                         otherwise
                             signal = smooth(s(roi_n,:),3);
                     end %(n_del_frames+1:end)
@@ -314,6 +327,7 @@ for Day_num = 1: size(unique_dates,1)
                         sig_bottom(cnt,roi_n) = min(signal((t >= tonset) & (t <= toffset)));
                         sig_hmm(cnt,roi_n) = 1*(sum(map_path((t >= tonset) & ...
                         (t <= toffset))) >= min_num_active_bins);
+                        
                         sig_hmm_time(cnt,roi_n) = sum(map_path((t >= tonset) & ...
                         (t <= toffset)))/30; 
                         sig_hmm_time_out(cnt,roi_n) = sum(map_path((t < tonset-edges(1)) | ...
@@ -362,6 +376,7 @@ for Day_num = 1: size(unique_dates,1)
             results_ratio_std = [results_ratio_std std(ratios,[],1)']; 
             results_ratio_max = [results_ratio_max quantile(ratios,0.9,1)']; %max(ratios,[],1)'];
             results_hmm = [results_hmm nanmean(sig_hmm,1)'];
+            results_hmm_counter = [results_hmm_counter nansum(sig_hmm,1)'];
             results_hmm_out = [results_hmm_out nanmean(sig_hmm_out,1)'];
             results_hmm_time = [results_hmm_time nanmean(sig_hmm_time,1)'];
             results_hmm_time_out = [results_hmm_time_out nanmean(sig_hmm_time_out,1)'];
@@ -382,6 +397,7 @@ for Day_num = 1: size(unique_dates,1)
             results_std = [results_std nan*ones(size(dff,1),1)];
             results_std_in = [results_std_in nan*ones(size(dff,1),1)];
             results_hmm = [results_hmm nan*ones(size(dff,1),1)];
+            results_hmm_counter = [results_hmm_counter nan*ones(size(dff,1),1)];
             results_hmm_out = [results_hmm_out nan*ones(size(dff,1),1)];
             results_hmm_time = [results_hmm_time nan*ones(size(dff,1),1)];
             results_hmm_time_out = [results_hmm_time_out nan*ones(size(dff,1),1)];
@@ -403,6 +419,7 @@ for Day_num = 1: size(unique_dates,1)
     results(Day_num).Std = results_std;
     results(Day_num).Std_in = results_std_in;
     results(Day_num).hmm = results_hmm;
+    results(Day_num).results_hmm_counter = results_hmm_counter;
     results(Day_num).hmm_out = results_hmm_out;
     results(Day_num).hmm_time = results_hmm_time;
     results(Day_num).hmm_time_out = results_hmm_time_out;

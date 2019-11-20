@@ -16,7 +16,7 @@ addpath(genpath(CNMFEfolder),'-end');
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
-birdnum = 1;
+birdnum = 3;
 switch birdnum
     case 1
         bird_params = bird1_params;
@@ -112,7 +112,7 @@ for daynum = 1:numel(results)
       
     end
 end
-%%
+%% calculate ** specificity ** distribution
 x = nansum(activity_in_phrases');
 y = activity_in_phrases'./(ones(size(activity_in_phrases',1),1)*x);
 thr = 0.05;
@@ -124,6 +124,8 @@ for i = 1:numel(res)
     z = sort(z,'descend');
     res(i) = min(find(cumsum(z)>thr2));
 end
+%% Plot
+
 %%
 cd('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code');
 load Spike_based_syllables_per_roi;

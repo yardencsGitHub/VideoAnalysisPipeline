@@ -9,11 +9,12 @@
 addpath(genpath('/Users/yardenc/Documents/GitHub/BirdSongBout'),'-end');
 addpath(genpath('/Users/yardenc/Documents/GitHub/pmtk3'),'-end');
 addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'),'-end');
+addpath(genpath('/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/CNMF_E'),'-end');
 %%
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
-birdnum = 3;
+birdnum = 1;
 switch birdnum
     case 1
         bird_params = bird1_params;
@@ -37,6 +38,8 @@ switch birdnum
         path_to_annotation_file = fullfile('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/movs/wav','lrb85315auto_annotation5_fix.mat');
         to_normalize = 1;
         include_zero = 1;
+        cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lrb853_15/ManualROIs');
+        load('results2018_01_15');
         % Leads to 30 phrase types
     case 2
         % For lbr3022
@@ -48,6 +51,8 @@ switch birdnum
         path_to_annotation_file = fullfile('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lbr3022/movs/wav','lbr3022auto_annotation5_alexa.mat');
         to_normalize = 1;
         include_zero = 1;
+        cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lbr3022/ManualROIs'); 
+        load('results2018_02_11.mat');
     case 3
         % For lbr3009
         ignore_dates = {'2017_04_27' '2017_04_28' '2017_06_05' '2017_06_06' '2017_06_07' '2017_06_08' '2017_06_09' '2017_06_12' '2017_06_13' ... 
@@ -59,6 +64,8 @@ switch birdnum
         path_to_annotation_file = fullfile('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lbr3009/movs/wav','lbr3009auto_annotation1_fix.mat');
         to_normalize = 1;
         include_zero = 0;
+        cd('/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/lbr3009/ManualROIs');
+        load('results2018_02_25');
 end
 
 
@@ -116,10 +123,15 @@ targetdir = ['/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/'
 signal_thr = 0.05;
 hmm_thr = 0.05;
 clc;
+All_vec_numbers_1st_post = [];
 display('Signal relation to next phrase:');
 for daynum = 1:numel(results)
     for roinum = 1:size(results(daynum).Max,1)
+        % this is the way corr were found in orig submission
         vec = find((results(daynum).Max(roinum,:) >= results(daynum).Max_after(roinum,:)).*(results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        All_vec_numbers_1st_post = [All_vec_numbers_1st_post; numel(vec)];
+        % Now try w.o. neighboring phrase condition (Sep 2019)
+        vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
@@ -149,7 +161,7 @@ for daynum = 1:numel(results)
                 xticks(1:numel(gnames)); xticklabels(gnames);
                 display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                     num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                outputfilename = fullfile(targetdir,['signal2postId_anova_Date_' results(daynum).Date ...
+                outputfilename = fullfile(targetdir,['NatureRevision_1st_post_anova_Date_' results(daynum).Date ...
                     '-roi' num2str(roinum) '-syllable' ...
                     num2str(sylnum) '.png']);
                 saveas(h,outputfilename);
@@ -163,20 +175,23 @@ end
 %% 1-2 look for phrases in which there is activity (hmm + high max) and correlated to prev phrase identity
 targetdir = ['/Users/yardenc/Documents/Experiments/Imaging/Analyses/CanaryData/' bird_folder_name ...
     '/ManualROIs/LongRangeCorrelations/PrevIdVsSignal'];
-signal_thr = 0.1;
-hmm_thr = 0.1;
+signal_thr = 0.05;
+hmm_thr = 0.05;
 clc;
 display('Signal relation to previous phrase:');
 for daynum = 1:numel(results)
     for roinum = 1:size(results(daynum).Max,1)
         vec = find((results(daynum).Max(roinum,:) >= results(daynum).Max_before(roinum,:)).*(results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        All_vec_numbers_1st_post = [All_vec_numbers_1st_post; numel(vec)];
+        vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
             
             h=figure('Position',[360    61   560   637],'Visible','off');
             ax = subplot(2,1,1); [hndls,r,p,gnames, outvars] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum nan],roinum,1,0,[-1], ...
-                'edges',[0 0],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
+                'edges',[0 0.1],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1,'anova_type',1);
             if p<0.05
 %                 f = gcf;
 %                 h1 = get(ax,'Parent');
@@ -198,7 +213,7 @@ for daynum = 1:numel(results)
                 xticks(1:numel(gnames)); xticklabels(gnames);
                 display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                     num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                outputfilename = fullfile(targetdir,['signal2prevId_anova_Date_' results(daynum).Date ...
+                outputfilename = fullfile(targetdir,['NatureRevision_1st_prev_anova_Date_' results(daynum).Date ...
                     '-roi' num2str(roinum) '-syllable' ...
                     num2str(sylnum) '.png']);
                 saveas(h,outputfilename);
@@ -316,15 +331,18 @@ display('Signal relation to 2nd post phrase:');
 for daynum = 1:numel(results)
     for roinum = 1:size(results(daynum).Max,1)
         vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        All_vec_numbers_1st_post = [All_vec_numbers_1st_post; numel(vec)];
+        
+        
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
-            post_types = find(resmat(state_labels == sylnum,:) >= 0.05);
+            post_types = find(resmat(state_labels == sylnum,:) >= 0.1);
             post_types = setdiff(post_types,[1 numel(state_labels)]);
             for post_cnt = 1:numel(post_types)
                 post_sylnum = state_labels(post_types(post_cnt));
                 h=figure('Position',[360    61   560   637],'Visible','off');
-                ax = subplot(2,1,1); [hndls,r,p,gnames] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum post_sylnum nan],roinum,1,0,[-4], ...
+                ax = subplot(2,1,1); [hndls,r,p,gnames,outvars] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,2,[nan sylnum post_sylnum nan],roinum,1,0,[-4], ...
                     'edges',[0.2 0.0],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
                 if p<0.05
                     xlim(ax,[-2 5]);
@@ -352,7 +370,7 @@ for daynum = 1:numel(results)
                     xticks(1:numel(gnames)); xticklabels(gnames); 
                     display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                         num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                    outputfilename = fullfile(targetdir,['signal2post_2nd_Id_anova_Date_' results(daynum).Date ...
+                    outputfilename = fullfile(targetdir,['NatureRevision_2nd_post_Id_anova_Date_' results(daynum).Date ...
                         '-roi' num2str(roinum) '-syllable' ...
                         num2str(sylnum) '-->' num2str(post_sylnum) '.png']);
 
@@ -378,16 +396,17 @@ display('Signal relation to 2nd prev phrase:');
 for daynum = 1:numel(results)
     for roinum = 1:size(results(daynum).Max,1)
         vec = find((results(daynum).Max(roinum,:) >= signal_thr).*(results(daynum).hmm(roinum,:) >= hmm_thr));
+        All_vec_numbers_1st_post = [All_vec_numbers_1st_post; numel(vec)];
         for syl = 1:numel(vec)
             sylnum = syllables(vec(syl));
             % previous phrase type
-            prev_types = find(resmat(:,state_labels == sylnum) >= 0.05);
+            prev_types = find(resmat(:,state_labels == sylnum) >= 0.1);
             prev_types = setdiff(prev_types,[1 numel(state_labels)]);
             for prev_cnt = 1:numel(prev_types)
                 prev_sylnum = state_labels(prev_types(prev_cnt));
                 h=figure('Position',[360    61   560   637],'Visible','off');
                 ax = subplot(2,1,1); [hndls,r,p,gnames, outvars] = LongRangeLockedSingleDayManualROIs_function(ax,results(daynum).Date,ignore_entries,join_entries,3,[nan prev_sylnum sylnum nan],roinum,1,0,[-1], ...
-                    'edges',[0.0 0.2],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1);
+                    'edges',[0.0 0.2],'use_residuals',-1,'display_opt',0,'bird_number',birdnum,'multicomp',1,'anova_type',1);
                 if p<0.05
                     xlim(ax,[-5 2]);
 %                     f = gcf;
@@ -416,7 +435,7 @@ for daynum = 1:numel(results)
                     xticks(1:numel(gnames)); xticklabels(gnames); 
                     display([results(daynum).Date ' - roi #' num2str(roinum) ', syllable ' ...
                         num2str(sylnum) ', ANOVA (F,p) = ' num2str(r) ',' num2str(p)]);
-                    outputfilename = fullfile(targetdir,['signal2prev_2nd_Id_anova_Date_' results(daynum).Date ...
+                    outputfilename = fullfile(targetdir,['NatureRevision_2nd_prev_Id_anova_Date_' results(daynum).Date ...
                         '-roi' num2str(roinum) '-syllable' ...
                         num2str(prev_sylnum) '-->' num2str(sylnum) '.png']);
 

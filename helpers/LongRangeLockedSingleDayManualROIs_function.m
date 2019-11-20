@@ -49,6 +49,8 @@ flag_loc_for_durations = 1;
 add_sort_crit = [];
 sort_crit_loc = 0.5;
 multicomp = 0;
+anova_type = 1; % 1 - ANOVA, 2 - KruskalWallis
+bird_number = 1;
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
@@ -56,6 +58,7 @@ for i=1:2:nparams
 		case 'delete_frames'
 			delete_frames=varargin{i+1};
         case 'bird_number'
+            bird_number = varargin{i+1};
 			 switch varargin{i+1}
                  case 1
                      bird_params = bird1_params;
@@ -92,6 +95,10 @@ for i=1:2:nparams
             sort_crit_loc = varargin{i+1};
         case 'multicomp'
             multicomp = varargin{i+1};
+        case 'anova_type'
+            anova_type = varargin{i+1};
+        case 'extra_stat' % will allow working woth syllable features if =8
+            extra_stat = varargin{i+1};
             
     end
 end
@@ -197,6 +204,19 @@ durations = []; % durations of selected elements only
 sylidx_durations = []; % duration of all numbered phrases in sequence and the onset and offset of the target phrase
 sequence_total_lengths = []; % the total duration, including gaps, of the entire sequence
 sequence_onsets = []; % durations of all phrases in sequence
+if extra_stat == 8
+    AcousticFeatures = [];
+    switch bird_number
+        case 1
+            load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code/SAP_features/lrb853_15_brainard_features.mat');
+        case 2
+            load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code/SAP_features/lbr3022_brainard_features.mat');
+        case 3
+            load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code/SAP_features/lbr3009_brainard_features.mat');
+    end
+end
+
+phrase_counts_and_position_in_song = [];
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
@@ -212,6 +232,17 @@ for fnum = 1:numel(FILES)
     elements{loc}.segFileStartTimes(ignore_locs) = [];
     elements{loc}.segFileEndTimes(ignore_locs) = [];
     elements{loc}.segType(ignore_locs) = [];  
+    if extra_stat == 8
+        feature_elements{loc}.syllable_duration(ignore_locs) = [];
+        feature_elements{loc}.FF(ignore_locs) = [];
+        feature_elements{loc}.time_to_half_peak(ignore_locs) = [];
+        feature_elements{loc}.FF_slope(ignore_locs) = [];
+        feature_elements{loc}.Amplitude_Slope(ignore_locs) = [];
+        feature_elements{loc}.Spectral_Entropy(ignore_locs) = [];
+        feature_elements{loc}.Temporal_Entropy(ignore_locs) = [];
+        feature_elements{loc}.SpectroTemporal_Entropy(ignore_locs) = [];
+    end
+        
     for i = 1:numel(join_entries)
         join_locs = find(ismember(elements{loc}.segType,join_entries{i}));
         elements{loc}.segType(join_locs) = join_entries{i}(1);
@@ -249,6 +280,10 @@ for fnum = 1:numel(FILES)
                 max_syls = max(max_syls,numel(syls_in_phrase));
                 hits = [hits; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1)) phrases.phraseType(phrase_idx)' sum(phrase_durations(phrase_idx(sylidx)))];
                 
+                last_onset_pos = max(find(phrases.phraseType(1:phrasenum) == -1000));
+                first_offset_pos = phrasenum - 1 + min(find(phrases.phraseType(phrasenum:end) == 1000));
+                phrase_counts_and_position_in_song = [phrase_counts_and_position_in_song; last_onset_pos first_offset_pos phrasenum];
+                
                 sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(~isnan(syllabels_sequence))) phrases.phraseFileStartTimes(phrase_idx(~isnan(syllabels_sequence) & ([1:numel(syllabels_sequence)]~=sylidx)))-tonset tonset toffset];
 %                     phrases.phraseFileStartTimes(phrase_idx(~isnan(syllabels_sequence) & ([1:numel(syllabels_sequence)]~=sylidx)))-tonset ...
 %                     phrases.phraseFileEndTimes(phrase_idx(~isnan(syllabels_sequence)))-tonset ...
@@ -261,7 +296,18 @@ for fnum = 1:numel(FILES)
                 sequence_onsets = [sequence_onsets; (phrases.phraseFileStartTimes(phrase_idx)-tonset)*locktoonset + ...
                     (phrases.phraseFileEndTimes(phrase_idx)-toffset)*(1-locktoonset)];
                 sequence_total_lengths = [sequence_total_lengths; phrases.phraseFileEndTimes(phrase_idx(end)) - phrases.phraseFileStartTimes(phrase_idx(1))];
-                
+                if extra_stat == 8
+                    AcousticFeatures = [AcousticFeatures; ...
+                        mean(feature_elements{loc}.syllable_duration(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.FF(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.time_to_half_peak(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.FF_slope(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.Amplitude_Slope(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.Spectral_Entropy(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.Temporal_Entropy(syls_in_phrase)) ...
+                        mean(feature_elements{loc}.SpectroTemporal_Entropy(syls_in_phrase)) ...
+                        ];
+                end
             end
             catch em
                 '4';
@@ -282,6 +328,9 @@ try
         durations = durations(dur_idx);
     end
     hits = hits(dur_idx,:);
+    if extra_stat == 8
+        AcousticFeatures = AcousticFeatures(dur_idx,:);
+    end
     sylidx_durations = sylidx_durations(dur_idx,:);
     sequence_onsets = sequence_onsets(dur_idx,:);
 catch em
@@ -289,7 +338,7 @@ catch em
     p=1; r=0; gnames=''; return;
 end
 
-
+outvars.phrase_counts_and_position_in_song = phrase_counts_and_position_in_song(dur_idx,:);
 %%
 sig_integrals_in = [];
 sig_integrals_before = [];
@@ -308,7 +357,12 @@ for cnt = 1:size(hits,1)
     loc = find(locs == str2num(tokens{3}));
     phrases = return_phrase_times(elements{loc});
     phrases = deal_with_time_gaps(phrases,max_phrase_gap);
-    load(fname);
+    if (spikes == 4)
+        new_fname = ['cnmfe_' fname(numel(file_prefix)+1:end)];
+        load(new_fname);
+    else
+        load(fname);
+    end
     dff_tmp = dff(:,n_del_frames+1:end);
     if delete_frames == 1
         if zscoring_type == 1
@@ -357,6 +411,8 @@ for cnt = 1:size(hits,1)
             [model, loglikHist] = hmmFit(sig, nstates, 'gauss','pi0',[zeros(1,nstates-1) 1],'emission0',CPD);                    
             path = hmmMap(model, sig)-1;
             signal = abs(median(path)-path)';
+        case 4
+            signal = full(dff(ROI,n_del_frames+1:end));
     end
     tonset = phrases.phraseFileStartTimes(phrasenum);
     toffset = phrases.phraseFileEndTimes(phrasenum);
@@ -388,9 +444,9 @@ for cnt = 1:size(hits,1)
         phraseType_raster(cnt,idxmap(idxs)) = interpolated_phrase_id(idxs);
     end
     
-    sig_com_before = [sig_com_before; ...
-        sum(signal((t <= com_edge) & (t >= hits(cnt,3))).*timetag(((t <= com_edge) & (t >= hits(cnt,3))))')/ ...
-        sum(signal((t <= com_edge) & (t >= hits(cnt,3))))];
+%     sig_com_before = [sig_com_before; ...
+%         sum(signal((t <= com_edge) & (t >= hits(cnt,3))).*timetag(((t <= com_edge) & (t >= hits(cnt,3))))')/ ...
+%         sum(signal((t <= com_edge) & (t >= hits(cnt,3))))];
     
     for currphrase = 1:numel(phrases.phraseType)
         try
@@ -454,27 +510,65 @@ if ~isempty(durations) & (extra_stat == 1)
     end
     outvars.sig_integrals_in = sig_integrals_in;
     if sort_type ~= 1 
-        
-        [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
-        boxplot(sig_integrals_in,id_flags);
-        hndls = [hndls; gca];
-        r = ANOVATAB{2,5};
-        gnames = STATS.gnames;
-        outvars.id_flags = id_flags;
-        if (multicomp == 1 && p < 0.05)
-            figure;
-            try
-                outvars.COMPARISON = multcompare(STATS);
-            catch em
+        if ismember(anova_type,1:2)
+            if anova_type == 1
+                [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
+            elseif anova_type == 2
+                [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags);
+            end
+            boxplot(sig_integrals_in,id_flags);
+            hndls = [hndls; gca];
+            r = ANOVATAB{2,5};
+            gnames = STATS.gnames;
+            outvars.id_flags = id_flags;
+            if (multicomp == 1 && p < 0.05)
+                figure;
+                try
+                    outvars.COMPARISON = multcompare(STATS);
+                catch em
+                    outvars.COMPARISON = nan;
+                end
+            else
                 outvars.COMPARISON = nan;
             end
-        else
-            outvars.COMPARISON = nan;
+        elseif ismember(anova_type,3:4)
+            if anova_type == 3
+                g1 = id_flags;
+                g2 = hits(:,3+add_sort_crit);
+                
+                
+                [p,ANOVATAB,STATS] = anovan(sig_integrals_in,{g2,g1},'display','off','model','linear');
+                hndls = [hndls; gca];
+                %figure;
+                try
+                    outvars.COMPARISON2 = multcompare(STATS,'display','off');
+                catch em
+                    outvars.COMPARISON2 = nan;
+                end
+                
+                [p,ANOVATAB,STATS] = anovan(sig_integrals_in,{g1,g2},'display','off','model','linear');
+                hndls = [hndls; gca];
+                r = ANOVATAB{2,5};
+                gnames = STATS.grpnames;
+                outvars.id_flags = [g1 g2];
+                %figure;
+                try
+                    outvars.COMPARISON1 = multcompare(STATS,'display','off');
+                catch em
+                    outvars.COMPARISON1 = nan;
+                end
+                %pause;
+                
+                %pause;
+            elseif anova_type == 4
+                [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags);
+            end
         end
         %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
         [r, p] = corr(durations,sig_integrals_in); 
+        outvars.durations = durations;
         gnames = figure('Visible','on'); plot(durations,sig_integrals_in,'bo','MarkerSize',12,'MarkerFaceColor','none','MarkerEdgeColor','k');
         hold on;
         segtypes = unique(id_flags);
@@ -497,6 +591,36 @@ if ~isempty(durations) & (extra_stat == 1)
     
 else
     p = 1; r = 0; gnames = numel(durations);
+end
+
+if extra_stat == 8
+    try
+        [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) AcousticFeatures],sig_integrals_in);
+        outvars.sig_integrals_in = sig_integrals_in;
+
+        if anova_type == 1
+            [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
+        elseif anova_type == 2
+            [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags);
+        end
+        boxplot(sig_integrals_in,id_flags);
+        hndls = [hndls; gca];
+        r = ANOVATAB{2,5};
+        gnames = STATS.gnames;
+        outvars.id_flags = id_flags;
+        if (multicomp == 1 && p < 0.05)
+            figure;
+            try
+                outvars.COMPARISON = multcompare(STATS);
+            catch em
+                outvars.COMPARISON = nan;
+            end
+        else
+            outvars.COMPARISON = nan;
+        end
+    catch em
+        p = 1; r = 0; gnames = numel(durations);
+    end
 end
 if compute_raster == 1
     figure; imagesc(signal_raster); colormap(copper); yticks([]); hold on;   
