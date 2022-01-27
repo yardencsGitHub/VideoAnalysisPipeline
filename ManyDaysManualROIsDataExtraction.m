@@ -20,7 +20,7 @@ addpath(genpath('/Users/yardenc/Documents/GitHub/VideoAnalysisPipeline'),'-end')
 addpath(genpath('/Users/yardenc/Documents/GitHub/FreedomScope/Analysis Pipeline'),'-end');
 
 
-n_del_frames = 6; % # of frames to ignore in the beginning of wach file in calculations
+n_del_frames = 6; % # of frames to ignore in the beginning of each file in calculations
 filt_rad = 150; filt_sigma = 145; % highpass filter 
 h = fspecial('gaussian',filt_rad,filt_sigma);
 date_loc = [13 4]; % location of date string in file name w.r.t. end

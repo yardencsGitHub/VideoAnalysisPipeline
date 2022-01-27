@@ -1,0 +1,51 @@
+function helper_function_single_day_CNMFE_pipeline(bird_id,Day,path_to_parameters_file,varargin)
+% This script runs the pipeline that: 
+% >> takes movies from a single day,
+% >> prepares a single file to use in CNMFE, 
+% >> runs the CNMFE scripts, 
+% >> runs the manual postprocessing
+
+% All parameters, shared by all days must be saved in one file
+params = load(path_to_parameters_file);
+
+GitHubFolder = '/Users/yardenc/Documents/GitHub/';
+DataFolder = params.DataFolder;
+output_filename = [bird_id '_' Day '_4cnmfe.mat'];
+output_folder = params.output_folder;
+max_frames = params.max_frames;
+n_del_frames = params.n_del_frames;
+resize_factor = params.resize_factor;
+% these varargins allow skipping some steps 
+skip_step_1 = false; 
+skip_step_2 = false;
+skip_step_3 = false;
+skip_step_4 = false;
+vid_onsets = [];
+
+nparams = length(varargin);
+for i=1:2:nparams
+    switch lower(varargin{i})
+		case 'skip_step_1'
+			skip_step_1=varargin{i+1};
+        case 'skip_step_2'
+			skip_step_2=varargin{i+1};
+        case 'skip_step_3'
+			skip_step_3=varargin{i+1};
+        case 'skip_step_4'
+			skip_step_4=varargin{i+1};
+        case 'vid_onsets'
+			vid_onsets=varargin{i+1};
+        case 'githubfolder'
+			GitHubFolder=varargin{i+1};
+         
+    end
+end
+
+% 1. Prepare the concatenated file.
+% This requires deleting frames that are later re-inserted.
+if ~skip_step_1
+    vid_onsets = helper_function_create_concatenated_vidMat(Day,'githubfolder',GitHubFolder,'datafolder',DataFolder,...
+                                                            'output_folder',output_folder,'max_frames',max_frames,...
+                                                            );
+end
+
