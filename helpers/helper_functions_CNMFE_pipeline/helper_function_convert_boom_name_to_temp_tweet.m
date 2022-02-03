@@ -1,0 +1,6 @@
+function new_name = helper_function_convert_boom_name_to_temp_tweet(bird_id,counter,nframes,old_name)
+the_date = old_name(1:10);
+the_time = old_name(12:19);
+new_name = [bird_id '_' sprintf('%05d',counter) '_' ...
+    sprintf('%05d',nframes) '_' char(join(split(the_date,'-'),'_')) ...
+    '_' char(join(split(the_time,' '),'_'))];
