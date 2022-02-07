@@ -1,11 +1,16 @@
-function [hndls,syl_types] = ColorOverlayMaxProjMaps_function(Day,ignore_entries,join_entries,sylidx,syllabels_sequence,order_flag,tags_to_color,base_colors,min_pixel_value,varargin)
+function [hndls,syl_types] = ColorOverlayMaxProjMaps_function(Day,sylidx,syllabels_sequence,order_flag,tags_to_color,base_colors,min_pixel_value,varargin)
 %% 
 % This script creates single ROI single day alignments to complex sequences
-% with only one variable (duration or syllable type)
+% with only one variable (duration or syllable type). 
+% This script requires that max. projection images are prepared using
+% 'CreatePhraseMaxProjections.m' helper function of the
+% VideoAnalysisPipeLine repo
+%
 % Inputs:
-%   Day - text rep. of date
-%   ignore_entries - A vector of label numbers to ignore completely. 
-%   join_entries - A cell of vectors, each containing a >1 number of labels
+%   Day - text rep. of date 
+%   if use_cohen2020 is set to 1 (see below) than this is also use in
+%   pointing to data folders. Otherwise it is used for figure titles only
+%   (but it must be supplied .. for safety)
 %   sylidx - index of syllable in the sequence to align to
 %   syllabels_sequence - the sequence of phrase identities to lock. Insert
 %       nan to keep it free
@@ -18,80 +23,95 @@ function [hndls,syl_types] = ColorOverlayMaxProjMaps_function(Day,ignore_entries
 %       3 - HMM state (signal \ noise)
 %   order_flag - the correlate. Use positive integers to indicate durations of
 %   phrases. A vector of positive integers will result in summation of
-%   durations. Use negative integers for type (no vectors)
+%   durations. Use negative integers for phrase type (no vectors)
 %   tags_to_color - which tags to use in creating the overlay
 %   base_colors - a cell array of rgb values corresponding to
-%   'tags_to_color
+%   'tags_to_color'. for example {[0 0 1], [1,1,0]} will be red and cyan
 %   min_pixel_value - lower values are set to zero
-%% change according to workstation
+%
+% Additional optional inputs:
+%   use_cohen2020 - legacy. set to 1 to supply parameters as in the code developed for "Hidden neural states underlie canary song syntax" (2020). 
+%   ignore_entries - A vector of label numbers to ignore completely. 
+%   join_entries - A cell array of vectors, each containing a >1 number of
+%                  labels to be grouped
+%   githubdir - where required repositories live
+%   display_opt - set to 1 to print the list of participating files and
+%                 phrases.
+%   bird_number - if 'bird_params' is not set, set to 1-3 to use data prepared for Cohen+al 2020
+%   bird_params - this cell array will be all the parameters: 
+%               bird_name = bird_params{1}; 
+%               bird_folder_name = bird_params{2}; can be different than
+%               the birds name
+%               path to template file = bird_params{3}; 
+%               path to annotation file = bird_params{4}; 
+%               path to ROIs data + file_prefix = bird_params{5};  (e.g.
+%               /folder/folder/prefix_)
+%               path to roi map = bird_params{6};
+%               path to max. projection files + prefix = bird_params{7}
+%
+%           if use_cohen2022 is set to 1 these will be overriden by the
+%           parameters in the code below.
+%
+%   rois - which ROIs to highlight or mark (default:0)
+%   set_bg_to_level_zero - quantile of intensity level set to 0 (default 0)
+%   intensity_gain - global multiplier of intensity (default 1.0)
+%   nonlinear_stretch - set to a 2-vector [a,b] to strech color saturation
+%   equally:
+%            a = saturation_sigm_threshold
+%            b = saturation_sigm_power
+%            the saturation (s) stretch: s = s/(1+exp(-(s-a)*b))
+%   patch_coor - where to place the scale bar
+%   
+%% Optional parameters
+use_cohen2020 = 0;
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
-GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
+GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub';
 display_opt = 0;
-use_residuals = 0;
-extra_stat = 1;
-compute_raster = 0;
-file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'; %
-%%
-bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_' 'nonoverlap_newROI_'};
-bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_' 'ROI_'};
-bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_' 'ROI_'};
+ignore_entries = [-1];
+join_entries = {};
+% The dataset from "Hidden neural states underlie canary song syntax" (Cohen+al 2020 Nature)
+bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_' 'nonoverlap_newROI_' 'none'};
+bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_' 'ROI_' 'none'};
+bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_' 'ROI_' 'none'};
 bird_params = bird2_params;
-delete_frames = 1;
-n_del_frames = 6;
-hvc_offset = 0.04;
-mulcnt = 2;
-edges = [0 0];
-opacity_factor = 0.5;
-zscoring_type = 0;
 max_phrase_gap = 0.5;
-quantile_threshold = 0.1;
 bird_number = 1;
 ROIs = 0;
-reference_tag = -1;
 set_bg_to_level_zero = 0;
 intensity_gain = 1.0;
 saturation_sigm_threshold = 0.5;
 saturation_sigm_power = 10;
 nonlinear_stretch = 0;
 patch_coor = [300 300];
+show_color_bars = 0;
+show_scale_bar = 0;
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
 	switch lower(varargin{i})
-		case 'delete_frames'
-			delete_frames=varargin{i+1};
+        case 'use_cohen2020'
+            use_cohen2020 = varargin{i+1};
         case 'bird_number'
-            bird_number = varargin{i+1};
-			 switch varargin{i+1}
-                 case 1
-                     bird_params = bird1_params;
-                 case 2
-                     bird_params = bird2_params;
-                 case 3
-                     bird_params = bird3_params;
+             bird_number = varargin{i+1};
+             if ~ismember('bird_params',varargin)
+                
+			         switch varargin{i+1}
+                         case 1
+                             bird_params = bird1_params;
+                         case 2
+                             bird_params = bird2_params;
+                         case 3
+                             bird_params = bird3_params;
+                     end 
              end
-        case 'n_del_frames'
-			n_del_frames=varargin{i+1};
-        case 'hvc_offset'
-			hvc_offset=varargin{i+1}; 
-        case 'edges'
-			edges=varargin{i+1}; 
-        case 'zscoring_type'
-			zscoring_type=varargin{i+1}; 
+        case 'bird_params'
+            bird_params = varargin{i+1};
         case 'max_phrase_gap'
 			max_phrase_gap=varargin{i+1}; 
         case 'display_opt'
 			display_opt=varargin{i+1}; 
-        case 'use_residuals'
-			use_residuals=varargin{i+1}; 
-        case 'compute_raster'
-			compute_raster=varargin{i+1}; 
-        case 'quantile_threshold'
-            quantile_threshold = varargin{i+1}; 
         case 'rois'
             ROIs = varargin{i+1};
-        case 'reference_tag'
-            reference_tag = varargin{i+1};
         case 'set_bg_to_level_zero'
             set_bg_to_level_zero = varargin{i+1};
         case 'intensity_gain'
@@ -103,32 +123,40 @@ for i=1:2:nparams
             saturation_sigm_power = temp_stretch(2);
         case 'patch_coor'
             patch_coor = varargin{i+1};
-            
+        case 'githubdir'
+            GithubDir = varargin{i+1};
+        case 'ignore_entries'
+            ignore_entries = varargin{i+1};
+        case 'join_entries'
+            join_entries = varargin{i+1};
+        case 'ignore_dates'
+            ignore_dates = varargin{i+1};   
+        case 'show_color_bars'
+            show_color_bars = varargin{i+1};      
+        case 'show_scale_bar'
+            show_scale_bar = varargin{i+1};
     end
 end
             
 
 %%
-addpath(genpath([GithubDir 'small-utils']),'-end');
-%addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
+%addpath(genpath([GithubDir 'small-utils']),'-end');
+addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
+addpath(genpath([GithubDir 'BirdSongBout']),'-end');
 bird_name = bird_params{1}; 
 bird_folder_name = bird_params{2}; 
 template_file = bird_params{3}; 
 annotation_file = bird_params{4}; 
 file_prefix = bird_params{5}; 
 roi_map_prefix = bird_params{6}; 
+maxproj_file_prefix = bird_params{7};
 
 
 %% Folders that contain data
-% Folders on laptop:
-laptop_mov_folder = [BaseDir bird_folder_name '/movs'];
-laptop_wav_folder = [BaseDir bird_folder_name '/movs/wav'];
-laptop_gif_folder = [BaseDir bird_folder_name '/movs/wav/gif'];
-laptop_annotated_dir = [BaseDir bird_folder_name '/movs/wav/annotated'];
-laptop_annotated_images_dir = [BaseDir bird_folder_name '/movs/wav/annotated/images'];
-DamagedFolder = [BaseDir bird_folder_name '/too_large_or_damaged/'];
-laptop_manualROI_folder = [BaseDir bird_folder_name '/ManualROIs'];
-laptop_maxproj_phrases_folder = [BaseDir bird_folder_name '/movs/PhraseMaxProj/'];
+if use_cohen2020
+    manualROI_folder = [BaseDir bird_folder_name '/ManualROIs'];
+    maxproj_phrases_folder = [BaseDir bird_folder_name '/movs/PhraseMaxProj/'];
+end
 
 %%
 flag = 0;
@@ -164,9 +192,11 @@ end
 %%
 AlphaNumeric = '{}ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 target_sequence_str = '';
-cd (laptop_manualROI_folder);
+if use_cohen2020
+    cd(manualROI_folder);
+end
 %load('syl_dur_gap_stat.mat');
-load(template_file);
+load(template_file,'templates');
 %syllables = [[templates.wavs.segType] -1 102 103];
 syllables = [templates.wavs.segType];
 syllables = [[-1000 1000] syllables setdiff([-1 102 103],syllables)];
@@ -195,8 +225,11 @@ elements = elements(indx);
 keys = keys(indx);
 dates = dates(indx,:);
 %%
-cd([laptop_manualROI_folder '/ROIdata/' Day]);
+if use_cohen2020
+    cd([manualROI_folder '/ROIdata/' Day]);
+end
 FILES = dir([file_prefix bird_name '*.mat']);
+
 FILES = {FILES.name};
 hits = [];
 max_syls = 0;
@@ -207,8 +240,12 @@ sequence_onsets = []; % durations of all phrases in sequence
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
-   
-    loc = find(locs == str2num(tokens{3}));
+    if use_cohen2020
+        loc = find(locs == str2num(tokens{3}));
+    else
+        name_idx = find(cellfun(@(x)strcmp(x,bird_name),tokens));
+        loc = find(locs == str2num(tokens{name_idx+1}));
+    end
     
     try
         ignore_locs = find(ismember(elements{loc}.segType,ignore_entries));
@@ -288,12 +325,16 @@ syl_types = unique(id_flags);
 for syl_type_cnt = 1:numel(syl_types)
     MaxIm{syl_type_cnt} = [];
 end
-cd(laptop_maxproj_phrases_folder);
+%cd(maxproj_phrases_folder);
 for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
     phrasenum = hits(cnt,2);
     fname = keys{fnum};
-    load(fullfile(laptop_maxproj_phrases_folder,['PhraseMaxProj_' fname(1:end-3) 'mat']));
+    if use_cohen2020
+        load(fullfile(maxproj_phrases_folder,['PhraseMaxProj_' fname(1:end-3) 'mat']));
+    else
+        load([maxproj_file_prefix fname(1:end-3) 'mat']);
+    end
     phrases1 = return_phrase_times(elements{fnum});
     phrases1 = deal_with_time_gaps(phrases1,max_phrase_gap);
     try
@@ -314,30 +355,59 @@ end
 id_flags(id_flags == -1) = [];
 %% Now create images
 hndls = [];
-roi_map_filename = [laptop_manualROI_folder '/ROIdata/' Day '/' roi_map_prefix Day '.mat'];
-load(roi_map_filename);
-mask = zeros(480,640);
+if use_cohen2020
+    roi_map_filename = [manualROI_folder '/ROIdata/' Day '/' roi_map_prefix Day '.mat'];
+    load(roi_map_filename);
+else
+    load(roi_map_prefix);
+end
+mask = zeros(size(ROI.reference_image));
 roimask = mask;
-nrows = 480;
+[nrows,ncols] = size(ROI.reference_image);
 textlocs = [];
+roi_fg = figure('Position',[1308         682         770/2         551/2]); 
+roi_ax = axes(roi_fg);
 for roi_n = 1:numel(ROI.coordinates)
-    roimask(ROI.coordinates{roi_n}(:,1)*nrows+ROI.coordinates{roi_n}(:,2)) = 1*ismember(roi_n,ROIs);
-    mask(ROI.coordinates{roi_n}(:,1)*nrows+ROI.coordinates{roi_n}(:,2))=1;
-    textlocs = [textlocs; mean(ROI.coordinates{roi_n}(:,1)) mean(ROI.coordinates{roi_n}(:,2))];
+    temp_coor = ROI.coordinates{roi_n};
+    temp_s_coor = size(temp_coor);
+    if temp_s_coor(1) < temp_s_coor(2)
+        temp_coor = transpose(temp_coor);
+    end
+    roimask(round(temp_coor(:,1)*nrows+temp_coor(:,2))) = 1*ismember(roi_n,ROIs);
+    mask(round(temp_coor(:,1)*nrows+temp_coor(:,2)))=1;
+    textlocs = [textlocs; mean(temp_coor(:,1)) mean(temp_coor(:,2))];
+    if ~use_cohen2020
+        plot(roi_ax,temp_coor(:,1),temp_coor(:,2),'Color',[0.5 0.5 0.5],'LineWidth',1);
+        hold on;
+    end
 end
-figure('Position',[1308         682         770         551]); imagesc(mask); hold on; colormap(1-gray)
+if use_cohen2020
+    figure('Position',[1308         682         770         551]); 
+    imagesc(mask); hold on; colormap(1-gray)
+end
 for roi_n = 1:numel(ROI.coordinates)
-    text(textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',16,'HorizontalAlignment','center','Color','k');
+    text(roi_ax,textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',16,'HorizontalAlignment','center','Color','k');
 end
-contour(mask,[0.5 0.5],'g');
-xticks([]); yticks([]); set(gca,'Position',[0.0842    0.0871    0.8312    0.8711]);
-hndls = [hndls gca];
-filt_rad = 10; filt_sigma = 3; % lowpass filter
+if use_cohen2020
+    contour(mask,[0.5 0.5],'g');
+end
+xticks([]); yticks([]); set(gca,'Position',[0.0842    0.0871    0.8312    0.8711]); %0.8312    0.8711
+if use_cohen2020
+    hndls = [hndls gca];
+else
+    hndls = [hndls roi_ax];
+    roi_ax.XLim = [0 ncols];
+    roi_ax.YLim = [0 nrows];
+    roi_ax.YDir = 'reverse';
+end
+% create and plot the overlay image
+filt_rad = 10; filt_sigma = 3; % lowpass filter (TODO: this should not be hard coded)
+filt_rad = 5; filt_sigma = 1.5;
 h = fspecial('gaussian',filt_rad,filt_sigma);
 mn = cat(3,MaxIm{:});
 mn = imfilter(mn,h,'circular','replicate');
 %mn = zscore(mn,0,3); zscoring is a bad idea, IT CREATES BIAS
-I = zeros(480,640,3); 
+I = zeros(nrows,ncols,3); 
 maxnorm = 0;
 for layernum = 1:numel(tags_to_color)
     Iaddition = nanmean(mn(:,:,ismember(id_flags,tags_to_color{layernum})),3); % mean or median?
@@ -345,48 +415,64 @@ for layernum = 1:numel(tags_to_color)
         Iaddition = Iaddition - quantile(Iaddition(:),set_bg_to_level_zero); %Iaddition(Iaddition(:)<0)=0;
     end
     maxnorm = max(maxnorm,max(Iaddition(:)));
-    I = I + repmat(Iaddition,1,1,3).*repmat(reshape(base_colors{layernum},1,1,3),480,640);    
+    I = I + repmat(Iaddition,1,1,3).*repmat(reshape(base_colors{layernum},1,1,3),nrows,ncols);    
 end
 %I = I-min(I(:));
 %I = I - min(min(sqrt(sum(I.*I,3))));
 I = I/maxnorm; I(I<0)=0;
 %min_pixel_value = quantile(I(:),min_pixel_value);
-min_pixel_value = quantile(reshape(sqrt(sum(I.*I,3)),1,640*480),min_pixel_value);
+min_pixel_value = quantile(reshape(sqrt(sum(I.*I,3)),1,nrows*ncols),min_pixel_value);
 
 %I(sqrt(sum(I.*I,3)) < min_pixel_value,:) = 0;
 I = I.*repmat(sqrt(sum(I.*I,3)) > min_pixel_value,1,1,3);
 I = I - min_pixel_value/sqrt(3); I(I<0)=0;
 % stretch colors uniformly
 
-
 I = I/max(max(sqrt(sum(I.*I,3))))*sqrt(3)*intensity_gain; %
 if (nonlinear_stretch == 1)
     I1 = rgb2hsv(I); I1(:,:,2) = 1./(1+exp(-(I1(:,:,2)-saturation_sigm_threshold)*saturation_sigm_power));
     I = hsv2rgb(I1);
 end
-figure('Position',[1308         682         770         551]); imshow(I); %/max(I(:))*1.0);
+im_fh = figure('Position',[1308         682         770         551]); im_ax = axes(im_fh); imshow(I,'Parent',im_ax); %/max(I(:))*1.0);
 hold on;
 if ~ismember(0,ROIs)
-    contour(roimask,[0.5 0.5],'Color',[0.5 0.5 0.5]);
+    if use_cohen2020
+        contour(roimask,[0.5 0.5],'Color',[0.5 0.5 0.5]);
+    end
     for roi_n = 1:numel(ROI.coordinates)
         if ismember(roi_n,ROIs)
-            text(textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',48,'HorizontalAlignment','center','Color',[0.5 0.5 0.5]);
+            text(im_ax,textlocs(roi_n,1),textlocs(roi_n,2),num2str(roi_n),'FontSize',48,'HorizontalAlignment','center','Color',[0.5 0.5 0.5]);
         end
     end
 end
-patch(patch_coor(1)+[0 50*5/6 50*5/6 0],patch_coor(2)+ [0 0 5 5],'w');
+% for roi_n = 1:numel(ROI.coordinates)
+%     temp_coor = ROI.coordinates{roi_n};
+%     temp_s_coor = size(temp_coor);
+%     if temp_s_coor(1) < temp_s_coor(2)
+%         temp_coor = transpose(temp_coor);
+%     end
+%     plot(temp_coor(:,1),temp_coor(:,2),'Color','w');
+% end
+if show_scale_bar
+    patch(im_ax,patch_coor(1)+[0 50*5/6 50*5/6 0],patch_coor(2)+ [0 0 5 5],'w');
+end
 xticks([]); yticks([]);
-hndls = [hndls gca];
-
-figure;
-I1 = I/sqrt(3);%/max(I(:));
-maxcol = max(max(sqrt(sum(I1.^2,3))));
-for layernum = 1:numel(tags_to_color)
-    subplot(1,numel(tags_to_color),layernum);
-    %maxcol = max(max(sum(I1.*repmat(reshape(base_colors{layernum},1,1,3),480,640),3)))/sqrt(sum(base_colors{layernum}.^2));
-    %newI = base_colors{layernum}'*[0:maxcol/24:maxcol];
-     newI = base_colors{layernum}'*1./(1+exp(-([0:maxcol/24:maxcol]-saturation_sigm_threshold)*saturation_sigm_power));
-    imshow(reshape(newI',25,1,3));
+if use_cohen2020
+    hndls = [hndls gca];
+else
+    hndls = [hndls im_ax];
+end
+if show_color_bars
+    bar_fh = figure; bar_ax = axes(bar_fh); %color bars
+    I1 = I/sqrt(3);%/max(I(:));
+    maxcol = max(max(sqrt(sum(I1.^2,3))));
+    for layernum = 1:numel(tags_to_color)
+        subplot(1,numel(tags_to_color),layernum);
+        %maxcol = max(max(sum(I1.*repmat(reshape(base_colors{layernum},1,1,3),480,640),3)))/sqrt(sum(base_colors{layernum}.^2));
+        %newI = base_colors{layernum}'*[0:maxcol/24:maxcol];
+        newI = base_colors{layernum}'*1./(1+exp(-([0:maxcol/24:maxcol]-saturation_sigm_threshold)*saturation_sigm_power));
+        imshow(reshape(newI',25,1,3));%,'Parent',bar_ax);
+    end
 end
 
 

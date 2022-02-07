@@ -21,7 +21,7 @@ function [hndls,r,p,gnames,outvars] = LongRangeLockedSingleDayManualROIs_functio
 %   phrases. A vector of positive integers will result in summation of
 %   durations. Use negative integers for type (no vectors)
 
-%% change according to workstation
+%% parameters
 BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
 GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
 display_opt = 0;
@@ -29,10 +29,11 @@ use_residuals = 0;
 extra_stat = 1;
 compute_raster = 0;
 file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'; %
-%%
+use_cohen2020 = 0;
 bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
 bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
 bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
+%bird_params = {bird_name bird_folder_name template_file annotation_file roi_dff_prefix};
 bird_params = bird2_params;
 outvars.flag = 1;
 delete_frames = 1;
@@ -55,11 +56,14 @@ bird_number = 1;
 nparams=length(varargin);
 for i=1:2:nparams
 	switch lower(varargin{i})
+        case 'use_cohen2020'
+			use_cohen2020=varargin{i+1};
 		case 'delete_frames'
 			delete_frames=varargin{i+1};
         case 'bird_number'
             bird_number = varargin{i+1};
-			 switch varargin{i+1}
+            if ~ismember('bird_params',varargin)
+		     switch varargin{i+1}
                  case 1
                      bird_params = bird1_params;
                  case 2
@@ -67,6 +71,9 @@ for i=1:2:nparams
                  case 3
                      bird_params = bird3_params;
              end
+            end
+        case 'bird_params'
+			bird_params=varargin{i+1};    
         case 'n_del_frames'
 			n_del_frames=varargin{i+1};
         case 'hvc_offset'
@@ -99,31 +106,27 @@ for i=1:2:nparams
             anova_type = varargin{i+1};
         case 'extra_stat' % will allow working woth syllable features if =8
             extra_stat = varargin{i+1};
-            
+        case 'githubdir'
+            GithubDir = varargin{i+1};   
     end
 end
             
 
 %%
-addpath(genpath([GithubDir 'small-utils']),'-end');
-%addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
+%addpath(genpath([GithubDir 'small-utils']),'-end');
+addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
 bird_name = bird_params{1}; 
 bird_folder_name = bird_params{2}; 
 template_file = bird_params{3}; 
 annotation_file = bird_params{4}; 
 file_prefix = bird_params{5}; 
-CNMFEfolder = [GithubDir 'CNMF_E'];
+CNMFEfolder = fullfile(GithubDir,'CNMF_E');
 addpath(genpath(CNMFEfolder),'-end');
 
 %% Folders that contain data
-% Folders on laptop:
-laptop_mov_folder = [BaseDir bird_folder_name '/movs'];
-laptop_wav_folder = [BaseDir bird_folder_name '/movs/wav'];
-laptop_gif_folder = [BaseDir bird_folder_name '/movs/wav/gif'];
-laptop_annotated_dir = [BaseDir bird_folder_name '/movs/wav/annotated'];
-laptop_annotated_images_dir = [BaseDir bird_folder_name '/movs/wav/annotated/images'];
-DamagedFolder = [BaseDir bird_folder_name '/too_large_or_damaged/'];
-laptop_manualROI_folder = [BaseDir bird_folder_name '/ManualROIs'];
+if use_cohen2020
+    manualROI_folder = [BaseDir bird_folder_name '/ManualROIs'];
+end
 
 %%
 flag = 0;
@@ -164,9 +167,11 @@ hndls = ax;
 %%
 AlphaNumeric = '{}ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 target_sequence_str = '';
-cd (laptop_manualROI_folder);
+if use_cohen2020
+    cd(manualROI_folder);
+end
 %load('syl_dur_gap_stat.mat');
-load(template_file);
+load(template_file,'templates');
 %syllables = [[templates.wavs.segType] -1 102 103];
 syllables = [templates.wavs.segType];
 syllables = [[-1000 1000] syllables setdiff([-1 102 103],syllables)];
@@ -195,9 +200,13 @@ elements = elements(indx);
 keys = keys(indx);
 dates = dates(indx,:);
 %%
-cd([laptop_manualROI_folder '/ROIdata/' Day]);
+if use_cohen2020
+    cd([manualROI_folder '/ROIdata/' Day]);
+end
 FILES = dir([file_prefix bird_name '*.mat']);
+FILES_folder = FILES(1).folder;
 FILES = {FILES.name};
+
 hits = [];
 max_syls = 0;
 durations = []; % durations of selected elements only
@@ -220,8 +229,12 @@ phrase_counts_and_position_in_song = [];
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
-   
-    loc = find(locs == str2num(tokens{3}));
+    if use_cohen2020
+        loc = find(locs == str2num(tokens{3}));
+    else
+        name_idx = find(cellfun(@(x)strcmp(x,bird_name),tokens));
+        loc = find(locs == str2num(tokens{name_idx+1}));
+    end
     
     try
         ignore_locs = find(ismember(elements{loc}.segType,ignore_entries));
@@ -354,14 +367,23 @@ for cnt = 1:size(hits,1)
     phrasenum = hits(cnt,2);
     fname = FILES{fnum};
     tokens = regexp(fname,'_','split');
-    loc = find(locs == str2num(tokens{3}));
+    if use_cohen2020
+        loc = find(locs == str2num(tokens{3}));
+    else
+        name_idx = find(cellfun(@(x)strcmp(x,bird_name),tokens));
+        loc = find(locs == str2num(tokens{name_idx+1}));
+    end
     phrases = return_phrase_times(elements{loc});
     phrases = deal_with_time_gaps(phrases,max_phrase_gap);
     if (spikes == 4)
         new_fname = ['cnmfe_' fname(numel(file_prefix)+1:end)];
         load(new_fname);
     else
-        load(fname);
+        if use_cohen2020
+            load(fname);
+        else
+            [vidTimes, dff] = load_dff_file(fullfile(FILES_folder,fname));
+        end
     end
     dff_tmp = dff(:,n_del_frames+1:end);
     if delete_frames == 1
@@ -399,7 +421,7 @@ for cnt = 1:size(hits,1)
             end
             signal = s;
         case 2
-            signal = smooth(y(ROI,:),3);
+            signal = y(ROI,:); %smooth(y(ROI,:),3);
         case 3
             sig = y(ROI,:);
             clear sigma;
@@ -711,6 +733,23 @@ function resid = linear_res(vec_a,vec_b)
     beta = tmpcov(1,2)/var(vec_b,1);
     alpha = mean(vec_a) - beta*mean(vec_b);
     resid = vec_a - alpha - beta*vec_b;
+end
+
+function [v_times, dff_mat] = load_dff_file(file_path)
+% script assumes file has only matrix variables that are 3d or 1d (with
+% size [1, l])
+% except the 3d video matrix the file can have 1 audio times vector and one
+% video times vector and that's it. They will be identified by their length
+    S = whos('-file',file_path);
+    tempfile = load(file_path);
+    v_times=[]; dff_mat=[];
+    for s_ind = 1:numel(S)
+        if S(s_ind).size(1) == 1
+            eval(['v_times = tempfile.' S(s_ind).name ';']);
+        else
+            eval(['dff_mat = tempfile.' S(s_ind).name ';']);
+        end
+    end
 end
 
 % function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
