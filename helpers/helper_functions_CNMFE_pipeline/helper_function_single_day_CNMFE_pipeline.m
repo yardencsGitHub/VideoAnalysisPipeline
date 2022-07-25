@@ -67,7 +67,7 @@ end
 
 % 2. Run the CNMFE pipeline
 if ~skip_step_2
-    addpath(genpath([GitHubFolder 'CNMF_E']));
+    addpath(genpath([GitHubFolder 'CNMF_E_CohenLab']));
     neuron = large_data_1p_pipeline_with_parameters(fullfile(output_folder,output_filename),params,...
                                                     'skip_step_3',skip_step_3,'skip_step_4',skip_step_4,'adjust_pnr_cn_thresholds',adjust_pnr_cn_thresholds);
 end
