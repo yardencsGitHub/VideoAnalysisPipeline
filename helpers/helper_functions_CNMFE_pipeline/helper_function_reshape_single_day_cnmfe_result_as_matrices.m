@@ -1,4 +1,4 @@
-function helper_function_reshape_single_day_cnmfe_result_as_data_matrices(path_day_cnmfe_results,path_params_file,path_original_results,path_output,varargin)
+function helper_function_reshape_single_day_cnmfe_result_as_matrices(path_day_cnmfe_results,path_params_file,path_original_results,path_output,varargin)
 % check that we're in a valid folder
 d = dir(fullfile(path_day_cnmfe_results,'parsing_record.mat'));
 if isempty(d)
