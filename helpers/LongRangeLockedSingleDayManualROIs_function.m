@@ -1,9 +1,19 @@
-function [hndls,r,p,gnames,outvars] = LongRangeLockedSingleDayManualROIs_function(ax,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,spikes,order_flag,varargin)
+function [hndls,outvars,outstats] = LongRangeLockedSingleDayManualROIs_function(ax,bird_params,Day,ignore_entries,join_entries,sylidx,syllabels_sequence,ROI,locktoonset,order_flag,varargin)
 %% 
 % This script creates single ROI single day alignments to complex sequences
 % with only one variable (duration or syllable type)
+
 % Inputs:
 %   ax - axes where to plot
+%   bird_params - a struct with the following fields:
+%       'bird_name' - a string with the bird's name as it appears in file names
+%       'base_dir' - string, path to the folder containing bird-names subfolders, each containing date-named data folders
+%       'bird_folder_name' - a string with the bird's name as it appears in the folder name
+%       'template_filepath' - string, full path to the template file
+%       'annotation_filepath'- string, full path to the annotation file
+%       'file_prefix' - string, the initial string in all data files. This
+%       must be followed, in all data files, by the string 'birdname_fileIDX_YYYY_mm_dd_hh_mm_ss.mat'
+%       'brainard_features_filepath' - string, full path to the calculated Brainard acoustic features for the song files
 %   Day - text rep. of date
 %   ignore_entries - A vector of label numbers to ignore completely. 
 %   join_entries - A cell of vectors, each containing a >1 number of labels
@@ -12,46 +22,49 @@ function [hndls,r,p,gnames,outvars] = LongRangeLockedSingleDayManualROIs_functio
 %       nan to keep it free
 %   ROI - the roi # 
 %   locktoonset - 0/1 to lock to phrase onset or offset
-%   spikes - type of variable (0-3):
-%       0 - denoised Ca
-%       1 - deconvolved Spikes
-%       2 - Fluorescence
-%       3 - HMM state (signal \ noise)
-%   order_flag - the correlate. Use positive integers to indicate durations of
-%   phrases. A vector of positive integers will result in summation of
+%   order_flag - the correlate. Use positive integers to indicate durations of phrases. A vector of positive integers will result in summation of
 %   durations. Use negative integers for type (no vectors)
 
-%% parameters
-BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
-GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
-display_opt = 0;
-use_residuals = 0;
-extra_stat = 1;
-compute_raster = 0;
-file_prefix = 'baseROIdata_'; %'NonoverlapBaseROIdata_'; %
-use_cohen2020 = 0;
-bird1_params = {'lrb85315' 'lrb853_15' 'lrb85315template' 'lrb85315auto_annotation5_fix' 'NonoverlapBaseROIdata_'};
-bird2_params = {'lbr3022' 'lbr3022' 'lbr3022_template' 'lbr3022auto_annotation5_alexa' 'baseROIdata_'};
-bird3_params = {'lbr3009' 'lbr3009' 'lbr3009_template_4TF' 'lbr3009auto_annotation1_fix' 'baseROIdata_'};
-%bird_params = {bird_name bird_folder_name template_file annotation_file roi_dff_prefix};
-bird_params = bird2_params;
-outvars.flag = 1;
-delete_frames = 1;
-n_del_frames = 6;
-hvc_offset = 0.04;
-mulcnt = 2;
-edges = [0 0];
-opacity_factor = 0.5;
-zscoring_type = 0;
-max_phrase_gap = 0.5;
-raster_edges = 2;
-label_mark_loc = 0;
-flag_loc_for_durations = 1;
-add_sort_crit = [];
-sort_crit_loc = 0.5;
-multicomp = 0;
+% Outputs:
+%   hndls: graphics handels to the created figures.
+%   outvars: struct, output variables depending on what analysis was done.
+%   outstats: structs, results of statistical tests.
+
+% Optional Field,Value Inputs:
+GithubDir = '/Users/yardenc/Documents/GitHub/'; % Tell the code where the github repos are
+display_opt = 0; % Set to 1 to make the code display per-file data
+use_residuals = -1; % What to do with signal before carrying stat tests:
+% -1: do nothing. 0: remove dep. on current phrase duration. 2: remove dep.
+% on phrase surations. 1: remove dep. on phrase durations and onset in song
+% of target phrase.
+extra_stat = 1; % set to 0 to avoid calculating stats.
+compute_raster = 0; % set to 1 to create high-res raster
+use_cohen2020 = 0; % set to 1 to load using cohen2020 data structure (if available).
+signal_deconv_type = 'none'; % set which algorithm to run on the signal (none is the default).
+% Other options:
+%       'denoisedCalcium' - run foopsi and use the Ca2+ signal proxy
+%       'denoisedSpikes' - run foopsi and use the spikes signal proxy
+%       'HMM' - fit a 2 state HMM (signal \ noise) and use 0,1 for the two
+%       states as the signal
+delete_frames = 1; % will we ignore video frames?
+n_del_frames = 5; % how many frames to ignore from each video
+hvc_offset = 0.04; % offset time (sec) between HVC and audio
+mulcnt = 2; % spacing between trials in 3d plot.
+edges = [0 0]; % how much time in seconds to consider when inegrating signal outside phrases.
+% set to [before after] to integrate more signal.
+opacity_factor = 0.5; %opacity of 3d line plot
+zscoring_type = 0; % set to 1 to z-score the signal
+max_phrase_gap = 0.5; %maximal gap (sec) between phrases to be considered one song.
+raster_edges = 2; % how many seconds to add around the raster.
+label_mark_loc = 0; % Where (in sec) to place the line's color bar w.r.t. 0.
+flag_loc_for_durations = 1; % not to be changed .. allows changing which durations to correlate with
+add_sort_crit = []; % designate which columns in the behavior data matrix 'hits' to also use when re-ordering the data
+% Those will be columns 3+add_sort_crit because the first 3 are already
+% used; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1))
+sort_crit_loc = 0.5; % Where (in sec) to place the line's color bar w.r.t. 0 for additional sorting criteria (only if add_sort_crit is used).
+multicomp = 0; % set to 1 to perform multiple comparisons after the stats.
 anova_type = 1; % 1 - ANOVA, 2 - KruskalWallis
-bird_number = 1;
+
 %% allow controlling parameters as function pair inputs
 nparams=length(varargin);
 for i=1:2:nparams
@@ -59,21 +72,7 @@ for i=1:2:nparams
         case 'use_cohen2020'
 			use_cohen2020=varargin{i+1};
 		case 'delete_frames'
-			delete_frames=varargin{i+1};
-        case 'bird_number'
-            bird_number = varargin{i+1};
-            if ~ismember('bird_params',varargin)
-		     switch varargin{i+1}
-                 case 1
-                     bird_params = bird1_params;
-                 case 2
-                     bird_params = bird2_params;
-                 case 3
-                     bird_params = bird3_params;
-             end
-            end
-        case 'bird_params'
-			bird_params=varargin{i+1};    
+			delete_frames=varargin{i+1};   
         case 'n_del_frames'
 			n_del_frames=varargin{i+1};
         case 'hvc_offset'
@@ -107,28 +106,35 @@ for i=1:2:nparams
         case 'extra_stat' % will allow working woth syllable features if =8
             extra_stat = varargin{i+1};
         case 'githubdir'
-            GithubDir = varargin{i+1};   
+            GithubDir = varargin{i+1};  
+        case 'signal_deconv_type'
+            signal_deconv_type = varargin{i+1};  
     end
 end
-            
 
-%%
-%addpath(genpath([GithubDir 'small-utils']),'-end');
+%% repos
 addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
-bird_name = bird_params{1}; 
-bird_folder_name = bird_params{2}; 
-template_file = bird_params{3}; 
-annotation_file = bird_params{4}; 
-file_prefix = bird_params{5}; 
-CNMFEfolder = fullfile(GithubDir,'CNMF_E');
+CNMFEfolder = fullfile(GithubDir,'CNMF_E_CohenLab');
 addpath(genpath(CNMFEfolder),'-end');
 
-%% Folders that contain data
+%% parameters
+%BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
+BaseDir = bird_params.base_dir; %'/Volumes/Labs/cohen/yardenc/Laptop2016_2021_backup/Documents/Experiments/Songbirds Imaging/Data/CanaryData';
+%GithubDir = '/Users/yardenc/Documents/Experiments/Code and Hardware Dev/GitHub/';
+outvars.flag = 1; hndls = []; outstats.flag = 1;
+
+%% Bird data
+bird_name = bird_params.bird_name; %{1}; 
+bird_folder_name = bird_params.bird_folder_name;%{2}; 
+template_file = bird_params.template_filepath;%{3}; 
+annotation_file = bird_params.annotation_filepath;%{4}; 
+file_prefix = bird_params.file_prefix;%{5}; 
+% Folders that contain data - legacy from cohen2020
 if use_cohen2020
-    manualROI_folder = [BaseDir bird_folder_name '/ManualROIs'];
+    manualROI_folder = fullfile(BaseDir,bird_folder_name,'ManualROIs');
 end
 
-%%
+%% Check that the input sequences are as expected.
 flag = 0;
 join_entries = join_entries(:);
 if ~isempty(join_entries)
@@ -143,28 +149,25 @@ if ~isempty(join_entries)
         end
     end
 end
-   
 if flag == 1
-    r = []; p = [];
     disp(['join or ignore lists overlap'])
     return;
 end
-
 if (any(order_flag == 0) || ...
    (any(order_flag < 0) & numel(order_flag) > 1) || ...
    any(order_flag > numel(syllabels_sequence)))
-    r = []; p = [];
     disp(['Illegal order format'])
     return;
 end
-sort_type = 1 - any(order_flag < 0);
-      
+
+%% prepare target sequence as alphanumeric and the list of file numbers
+sort_type = 1 - any(order_flag < 0); % separate sorting by phrase type vs. duration
+% create figure if needed
 if isempty(ax)
     h=figure('Visible','off','Position',[77          91        640         600]);
     ax = axes;
 end
 hndls = ax;
-%%
 AlphaNumeric = '{}ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 target_sequence_str = '';
 if use_cohen2020
@@ -183,8 +186,6 @@ for cnt = 1:numel(syllabels_sequence)
         target_sequence_str = [target_sequence_str AlphaNumeric(syllables == syllabels_sequence(cnt))];
     end
 end
-
-freq_min = 300; freq_max = 8000;
 colors = distinguishable_colors(n_syllables,'w');
 colors = [0.25 0.25 0.25; 0.25 0.25 0.25 ;colors];
 load(annotation_file);
@@ -195,48 +196,34 @@ for i = 1:numel(keys)
     ord = [ord; str2num(tokens{2})];
     dates = [dates; char(join(tokens(3:5),'_'))];
 end
-[locs,indx] = sort(ord);
+[file_indices,indx] = sort(ord);
 elements = elements(indx);
 keys = keys(indx);
 dates = dates(indx,:);
-%%
-if use_cohen2020
+
+%% Prepare the list of all files to analyze
+if use_cohen2020 % legacy - load files from the folder structure supporting cohen2020
     cd([manualROI_folder '/ROIdata/' Day]);
+    FILES = dir([file_prefix bird_name '*.mat']);
+else
+    FILES = dir(fullfile(BaseDir,bird_folder_name,Day,[file_prefix bird_name '*.mat']));
 end
-FILES = dir([file_prefix bird_name '*.mat']);
 FILES_folder = FILES(1).folder;
 FILES = {FILES.name};
-
-hits = [];
-max_syls = 0;
+hits = []; % will collect data on all files to process
 durations = []; % durations of selected elements only
 sylidx_durations = []; % duration of all numbered phrases in sequence and the onset and offset of the target phrase
 sequence_total_lengths = []; % the total duration, including gaps, of the entire sequence
 sequence_onsets = []; % durations of all phrases in sequence
-if extra_stat == 8
+if extra_stat == 8 % if we are using Brainard acoustic features (computed separately)
     AcousticFeatures = [];
-    switch bird_number
-        case 1
-            load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code/SAP_features/lrb853_15_brainard_features.mat');
-        case 2
-            load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code/SAP_features/lbr3022_brainard_features.mat');
-        case 3
-            load('/Users/yardenc/Documents/Projects/CohenGardner2017_CanaryHVCImaging/Code/SAP_features/lbr3009_brainard_features.mat');
-    end
+    load(bird_params.brainard_features_filepath);
 end
-
-phrase_counts_and_position_in_song = [];
+phrase_counts_and_position_in_song = []; % will collect phrase positions: last_onset_pos first_offset_pos phrasenum
 for fnum = 1:numel(FILES)
     fname = FILES{fnum};
-    tokens = regexp(fname,'_','split');
-    if use_cohen2020
-        loc = find(locs == str2num(tokens{3}));
-    else
-        name_idx = find(cellfun(@(x)strcmp(x,bird_name),tokens));
-        loc = find(locs == str2num(tokens{name_idx+1}));
-    end
-    
-    try
+    loc = loc_file_in_locs(fname,file_indices);    
+    try % in case we wish to ignore some syllable types
         ignore_locs = find(ismember(elements{loc}.segType,ignore_entries));
     catch eem
         continue;
@@ -245,7 +232,7 @@ for fnum = 1:numel(FILES)
     elements{loc}.segFileStartTimes(ignore_locs) = [];
     elements{loc}.segFileEndTimes(ignore_locs) = [];
     elements{loc}.segType(ignore_locs) = [];  
-    if extra_stat == 8
+    if extra_stat == 8 % in case we use Brainard features
         feature_elements{loc}.syllable_duration(ignore_locs) = [];
         feature_elements{loc}.FF(ignore_locs) = [];
         feature_elements{loc}.time_to_half_peak(ignore_locs) = [];
@@ -254,9 +241,8 @@ for fnum = 1:numel(FILES)
         feature_elements{loc}.Spectral_Entropy(ignore_locs) = [];
         feature_elements{loc}.Temporal_Entropy(ignore_locs) = [];
         feature_elements{loc}.SpectroTemporal_Entropy(ignore_locs) = [];
-    end
-        
-    for i = 1:numel(join_entries)
+    end  
+    for i = 1:numel(join_entries) % in case we join some syllable types
         join_locs = find(ismember(elements{loc}.segType,join_entries{i}));
         elements{loc}.segType(join_locs) = join_entries{i}(1);
     end
@@ -269,34 +255,37 @@ for fnum = 1:numel(FILES)
     phrases_str = cell2mat(arrayfun(@(x)AlphaNumeric(syllables == x),phrases.phraseType','UniformOutput',false));
     phrase_durations = phrases.phraseFileEndTimes - phrases.phraseFileStartTimes;
     gap_durations = phrases.phraseFileStartTimes(2:end) - phrases.phraseFileEndTimes(1:end-1);
-    
-    
-    try
+    try % try to find the target sequence in the phrase seqyence
         endpoint = regexp(phrases_str,target_sequence_str,'end');
     catch em
         endpoint = [];
     end
     if ~isempty(endpoint)
-        
-        phrase_locs = endpoint - numel(target_sequence_str) + sylidx;
-        
+        phrase_locs = endpoint - numel(target_sequence_str) + sylidx; %indices of target phrase in phrase sequence
         for phrase_loc = 1:numel(phrase_locs)
-            phrase_idx = endpoint(phrase_loc) - numel(target_sequence_str) + [1:numel(target_sequence_str)];
+            phrase_idx = endpoint(phrase_loc) - numel(target_sequence_str) + [1:numel(target_sequence_str)]; %indices of target sequence
             try
-            if ~any(gap_durations(phrase_idx(1:end-1)) > max_phrase_gap)
-                
-                phrasenum = phrase_locs(phrase_loc);
+            if ~any(gap_durations(phrase_idx(1:end-1)) > max_phrase_gap)       
+                phrasenum = phrase_locs(phrase_loc); %index of target phrase
                 tonset = phrases.phraseFileStartTimes(phrasenum);
                 toffset = phrases.phraseFileEndTimes(phrasenum);
                 syls_in_phrase = find(elements{loc}.segFileEndTimes >= tonset & ...
-                elements{loc}.segFileStartTimes <= toffset);
-                max_syls = max(max_syls,numel(syls_in_phrase));
+                elements{loc}.segFileStartTimes <= toffset); %indices of syllables in target phrase
+                %max_syls = max(max_syls,numel(syls_in_phrase));
                 hits = [hits; fnum phrasenum phrases.phraseFileStartTimes(phrase_idx(1)) phrases.phraseType(phrase_idx)' sum(phrase_durations(phrase_idx(sylidx)))];
-                
+                % hits holds for each discovered phrase sequence: 1. the
+                % file number (in that day) 2. The phrase number in the
+                % song file. 3. The time (in sec) of the beginning of the
+                % target phrase sequence. 4. The types of the phrases in
+                % the target sequence (there are variables there). 5. The
+                % duration of the targeted phras (or phrases).
                 last_onset_pos = max(find(phrases.phraseType(1:phrasenum) == -1000));
                 first_offset_pos = phrasenum - 1 + min(find(phrases.phraseType(phrasenum:end) == 1000));
                 phrase_counts_and_position_in_song = [phrase_counts_and_position_in_song; last_onset_pos first_offset_pos phrasenum];
-                
+                % phrase_counts_and_position_in_song holds 1. The phrase index of the last
+                % onset before the current target phrase sequence. 2. The
+                % first ofset after the current sequence. 3. The index of
+                % the current target phrase.
                 sylidx_durations = [sylidx_durations; phrase_durations(phrase_idx(~isnan(syllabels_sequence))) phrases.phraseFileStartTimes(phrase_idx(~isnan(syllabels_sequence) & ([1:numel(syllabels_sequence)]~=sylidx)))-tonset tonset toffset];
 %                     phrases.phraseFileStartTimes(phrase_idx(~isnan(syllabels_sequence) & ([1:numel(syllabels_sequence)]~=sylidx)))-tonset ...
 %                     phrases.phraseFileEndTimes(phrase_idx(~isnan(syllabels_sequence)))-tonset ...
@@ -323,7 +312,7 @@ for fnum = 1:numel(FILES)
                 end
             end
             catch em
-                '4';
+                '4'; % debug point
             end
             
         end
@@ -348,15 +337,14 @@ try
     sequence_onsets = sequence_onsets(dur_idx,:);
 catch em
     'f';
-    p=1; r=0; gnames=''; return;
+    return;
 end
-
 outvars.phrase_counts_and_position_in_song = phrase_counts_and_position_in_song(dur_idx,:);
-%%
+
+%% Collect data matrices and draw signals
 sig_integrals_in = [];
 sig_integrals_before = [];
-sig_com_before = [];
-max_signal = 0;
+%sig_com_before = [];
 if (compute_raster > 0)
     max_sequence_duration = max(sequence_total_lengths);
     signal_raster = zeros(size(hits,1),ceil(max_sequence_duration*1000+200+2000*raster_edges))*nan; 
@@ -366,25 +354,15 @@ for cnt = 1:size(hits,1)
     fnum = hits(cnt,1);
     phrasenum = hits(cnt,2);
     fname = FILES{fnum};
-    tokens = regexp(fname,'_','split');
-    if use_cohen2020
-        loc = find(locs == str2num(tokens{3}));
-    else
-        name_idx = find(cellfun(@(x)strcmp(x,bird_name),tokens));
-        loc = find(locs == str2num(tokens{name_idx+1}));
-    end
+    loc = loc_file_in_locs(fname,file_indices);
     phrases = return_phrase_times(elements{loc});
     phrases = deal_with_time_gaps(phrases,max_phrase_gap);
-    if (spikes == 4)
-        new_fname = ['cnmfe_' fname(numel(file_prefix)+1:end)];
-        load(new_fname);
+   
+    if use_cohen2020
+        load(fname);
     else
-        if use_cohen2020
-            load(fname);
-        else
-            [vidTimes, dff] = load_dff_file(fullfile(FILES_folder,fname));
-        end
-    end
+        [vidTimes, dff] = load_dff_file(fullfile(FILES_folder,fname));
+    end    
     dff_tmp = dff(:,n_del_frames+1:end);
     if delete_frames == 1
         if zscoring_type == 1
@@ -401,8 +379,8 @@ for cnt = 1:size(hits,1)
         end
         t = vidTimes+hvc_offset;
     end
-    switch spikes
-        case 0
+    switch signal_deconv_type
+        case 'denoisedCalcium'
             try 
                 [c, s, options] = deconvolveCa(y(ROI,:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin');%,'optimize_pars');
             catch em
@@ -413,16 +391,16 @@ for cnt = 1:size(hits,1)
                 end
             end
             signal = c + options.b*(options.b < 0);
-        case 1
+        case 'denoisedSpikes'
             try 
                 [c, s, options] = deconvolveCa(y(ROI,:),'ar2',[1.3 -0.422],'method','thresholded','optimize_b','optimize_smin');
             catch em
                 [c, s, options] = deconvolveCa((y(ROI,:)),'ar2','method','foopsi','optimize_b',1);
             end
             signal = s;
-        case 2
+        case 'none'
             signal = y(ROI,:); %smooth(y(ROI,:),3);
-        case 3
+        case 'HMM'
             sig = y(ROI,:);
             clear sigma;
             nstates = 2;
@@ -433,19 +411,19 @@ for cnt = 1:size(hits,1)
             [model, loglikHist] = hmmFit(sig, nstates, 'gauss','pi0',[zeros(1,nstates-1) 1],'emission0',CPD);                    
             path = hmmMap(model, sig)-1;
             signal = abs(median(path)-path)';
-        case 4
-            signal = full(dff(ROI,n_del_frames+1:end));
+        %case 4
+        %    signal = full(dff(ROI,n_del_frames+1:end));
     end
     tonset = phrases.phraseFileStartTimes(phrasenum);
     toffset = phrases.phraseFileEndTimes(phrasenum);
-    com_edge = (tonset - edges(1))*locktoonset + (toffset + edges(2))*(1-locktoonset);
+    %com_edge = (tonset - edges(1))*locktoonset + (toffset + edges(2))*(1-locktoonset);
     if (display_opt)
         display([num2str([cnt tonset]) ' ' fname]);
     end
     sig_integrals_in = [sig_integrals_in; ...
                 sum(signal((t >= tonset-edges(1)) & (t <= toffset+edges(2))))];
-    sig_integrals_before = [sig_integrals_before; ...
-        sum(signal((t <= tonset-edges(1)) & (t >= hits(cnt,3))))];
+    %sig_integrals_before = [sig_integrals_before; ...
+    %    sum(signal((t <= tonset-edges(1)) & (t >= hits(cnt,3))))];
     timetag = (t-tonset*locktoonset-(1-locktoonset)*toffset);
     t_phr_on = (phrases.phraseFileStartTimes-tonset*locktoonset-(1-locktoonset)*toffset);
     t_phr_off = (phrases.phraseFileEndTimes-tonset*locktoonset-(1-locktoonset)*toffset);
@@ -465,11 +443,7 @@ for cnt = 1:size(hits,1)
         signal_raster(cnt,idxmap(idxs)) = interpolated_signal(idxs);
         phraseType_raster(cnt,idxmap(idxs)) = interpolated_phrase_id(idxs);
     end
-    
-%     sig_com_before = [sig_com_before; ...
-%         sum(signal((t <= com_edge) & (t >= hits(cnt,3))).*timetag(((t <= com_edge) & (t >= hits(cnt,3))))')/ ...
-%         sum(signal((t <= com_edge) & (t >= hits(cnt,3))))];
-    
+        
     for currphrase = 1:numel(phrases.phraseType)
         try
         plot3(ax,timetag(t >= phrases.phraseFileStartTimes(currphrase) & ...
@@ -481,7 +455,7 @@ for cnt = 1:size(hits,1)
              'LineWidth',2,'Color',[colors(find(syllables == phrases.phraseType(currphrase)),:) opacity_factor]);
          hold on;
         catch em1
-            'd';
+            'd'; % debug point
         end
          if (currphrase < numel(phrases.phraseType))
              startidx = max(find(t <= phrases.phraseFileEndTimes(currphrase)));
@@ -510,21 +484,17 @@ for cnt = 1:size(hits,1)
     axis tight;
     xlim([-1 3]-(1-locktoonset));         
 end
-r=[]; p=[]; 
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
-
-if ~isempty(durations) & (extra_stat == 1)
-    if use_residuals > 0
+%%
+%%%%%%%%%%% Perform all the statistical tests
+if ~isempty(durations) & (extra_stat == 1) % run only if needed
+    outstats.use_residuals = use_residuals;
+    if use_residuals > 0 %remove dependencies on covariates if needed
         try
             [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) sylidx_durations(:,1:end-use_residuals)],sig_integrals_in);
         catch em1
-           'd'; 
            sig_integrals_in = linear_res(sig_integrals_in,durations);
         end
-        %sig_integrals_in =
-        %linear_res(sig_integrals_in,sylidx_durations(:,1)); this is set to
-        %1 because the original sylidx_durations kept only the duration of
-        %the target phrase .. change it it uncommenting
     elseif use_residuals == 0
         [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) durations],sig_integrals_in);
     else
@@ -534,32 +504,35 @@ if ~isempty(durations) & (extra_stat == 1)
     if sort_type ~= 1 
         if ismember(anova_type,1:2)
             if anova_type == 1
-                [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
+                [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags); %one-way ANOVA
+                outstats.type = '1-way ANOVA';
             elseif anova_type == 2
-                [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags);
+                [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags); %Kruskal-Wallis
+                outstats.type = '1-way KruskalWallis';
             end
             boxplot(sig_integrals_in,id_flags);
             hndls = [hndls; gca];
-            r = ANOVATAB{2,5};
-            gnames = STATS.gnames;
+            outstats.p = p;
+            r = ANOVATAB{2,5}; outstats.r = r;
+            gnames = STATS.gnames; outvars.gnames = gnames;
             outvars.id_flags = id_flags;
             if (multicomp == 1 && p < 0.05)
                 figure;
                 try
-                    outvars.COMPARISON = multcompare(STATS);
+                    outstats.COMPARISON = multcompare(STATS);
                 catch em
-                    outvars.COMPARISON = nan;
+                    outstats.COMPARISON = nan;
                 end
             else
-                outvars.COMPARISON = nan;
+                outstats.COMPARISON = nan;
             end
         elseif ismember(anova_type,3:4)
-            if anova_type == 3
+            if anova_type == 3 % 2-way ANOVA
                 g1 = id_flags;
                 g2 = hits(:,3+add_sort_crit);
-                
-                
                 [p,ANOVATAB,STATS] = anovan(sig_integrals_in,{g2,g1},'display','off','model','linear');
+                outstats.type = '2-way ANOVA';
+                outstats.p = p;
                 hndls = [hndls; gca];
                 %figure;
                 try
@@ -567,41 +540,49 @@ if ~isempty(durations) & (extra_stat == 1)
                 catch em
                     outvars.COMPARISON2 = nan;
                 end
-                
                 [p,ANOVATAB,STATS] = anovan(sig_integrals_in,{g1,g2},'display','off','model','linear');
                 hndls = [hndls; gca];
-                r = ANOVATAB{2,5};
-                gnames = STATS.grpnames;
+                outstats.p = p;
+                r = ANOVATAB{2,5}; outstats.r = r;
+                gnames = STATS.grpnames; outvars.gnames = gnames;
                 outvars.id_flags = [g1 g2];
                 %figure;
                 try
-                    outvars.COMPARISON1 = multcompare(STATS,'display','off');
+                    outstats.COMPARISON1 = multcompare(STATS,'display','off');
                 catch em
-                    outvars.COMPARISON1 = nan;
+                    outstats.COMPARISON1 = nan;
                 end
                 %pause;
                 
                 %pause;
-            elseif anova_type == 4
+            elseif anova_type == 4 %Kruskal Wallis
                 [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags);
+                r = ANOVATAB{2,5}; outstats.r = r;
+                outstats.p = p;
+                outstats.type = 'KruskalWallis';
             end
         end
         %[pp,ANOVATAB,STATS] = anova1(durations,id_flags);
         
     else    
-        [r, p] = corr(durations,sig_integrals_in); 
+        [r, p] = corr(durations,sig_integrals_in); % Pearson correlation
+        outstats.type = 'Pearson Corr.';
+        outstats.r = r; outstats.p = p;
         outvars.durations = durations;
-        gnames = figure('Visible','on'); plot(durations,sig_integrals_in,'bo','MarkerSize',12,'MarkerFaceColor','none','MarkerEdgeColor','k');
+        figure('Visible','on'); plot(durations,sig_integrals_in,'bo','MarkerSize',12,'MarkerFaceColor','none','MarkerEdgeColor','k');
+        hndls = [hndls; gca];
         hold on;
         segtypes = unique(id_flags);
+        per_seg_stats = [];
         for segt = 1:numel(segtypes)
             ntrials = find(id_flags == segtypes(segt));
             plot(durations(ntrials),sig_integrals_in(ntrials),'o','MarkerSize',10,'MarkerFaceColor',colors(find(syllables == segtypes(segt)),:),'MarkerEdgeColor','none');
             [r_tag, p_tag] = corr(durations(ntrials),sig_integrals_in(ntrials)); 
             disp([segtypes(segt) r_tag, p_tag]);
+            per_seg_stats = [per_seg_stats; segtypes(segt) r_tag, p_tag];
         end
         set(gca,'FontSize',16); xlabel('Durations'); ylabel('Signal Integral'); title(['(r,p) = ' num2str([r,p])]);
-        hndls = [hndls; gca];
+        outstats.per_seg_stats = per_seg_stats;       
 %         [r1, p1] = corr(durations,sylidx_durations(:,1)); 
 %         figure('Visible','on'); plot(durations,sylidx_durations(:,1),'ro','MarkerSize',10,'MarkerFaceColor','r','MarkerEdgeColor','none');
 %         set(gca,'FontSize',16); xlabel('Durations'); ylabel('idx durations'); title(['(r,p) = ' num2str([r1,p1])]);
@@ -616,19 +597,23 @@ else
 end
 
 if extra_stat == 8
+    outstats.use_residuals = 'Acoustic';
     try
         [~,~,sig_integrals_in,~,~] = mvregress([ones(size(hits,1),1) AcousticFeatures],sig_integrals_in);
         outvars.sig_integrals_in = sig_integrals_in;
 
         if anova_type == 1
             [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags);
+            outstats.type = '1-way ANOVA';
         elseif anova_type == 2
             [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags);
+            outstats.type = '1-way KruskalWallis';      
         end
+        outstats.p = p;
         boxplot(sig_integrals_in,id_flags);
         hndls = [hndls; gca];
-        r = ANOVATAB{2,5};
-        gnames = STATS.gnames;
+        r = ANOVATAB{2,5}; outstats.r = r;
+        gnames = STATS.gnames; outvars.gnames = gnmaes;
         outvars.id_flags = id_flags;
         if (multicomp == 1 && p < 0.05)
             figure;
@@ -644,10 +629,12 @@ if extra_stat == 8
         p = 1; r = 0; gnames = numel(durations);
     end
 end
+
+%% high-res raster plots 
 if compute_raster == 1
-    figure; imagesc(signal_raster); colormap(copper); yticks([]); hold on;   
     %line([2100 2100],[0 size(hits,1)+0.5],'Color','w');
     zeroidx = (100+raster_edges*1000)*locktoonset + (1-locktoonset)*(size(signal_raster,2)-(100+raster_edges*1000));
+    figure; imagesc(signal_raster); colormap(copper); yticks([]); hold on;
     for i = 1:size(hits,1)
         for j = 1:size(sequence_onsets,2)
             line([zeroidx+1000*sequence_onsets(i,j) zeroidx+1000*sequence_onsets(i,j)],[i-0.5 i+0.5],'Color','w'); %sylidx_
@@ -690,7 +677,7 @@ if compute_raster == 1
     hndls = [hndls; gca];
 end
 
-if compute_raster == 2
+if compute_raster == 2 % Overlay signals as semi-transparent fills
     figure; 
     signal_raster(isnan(signal_raster)) = 0;
     phraseType_raster(isnan(phraseType_raster)) = 0;
@@ -709,13 +696,10 @@ if compute_raster == 2
             fill(xs,ys,col,'LineStyle','none','FaceAlpha',0.5);
             hold on;
         end
-    end
-        
+    end        
     yticks([]); hold on;   
     %line([2100 2100],[0 size(hits,1)+0.5],'Color','w');
     zeroidx = (100+raster_edges*1000)*locktoonset + (1-locktoonset)*(size(signal_raster,2)-(100+raster_edges*1000));
-    
-    %
     if locktoonset == 1
         xticks(raster_edges*1000+[100 1100]); xticklabels([0 1]);
     else
@@ -723,8 +707,17 @@ if compute_raster == 2
     end
     hndls = [hndls; gca];
 end
+%%
 %set(ax,'CameraTarget', [1 36 0.2605]);
-
+% helper funcitons
+function loc = loc_file_in_locs(fname,locs)
+    tokens = regexp(fname,'_','split');
+    if use_cohen2020
+        loc = find(locs == str2num(tokens{3}));
+    else
+        name_idx = find(cellfun(@(x)strcmp(x,bird_name),tokens));
+        loc = find(locs == str2num(tokens{name_idx+1}));
+    end
 end
 function resid = linear_res(vec_a,vec_b)
     % returns the residuals of vec_a after removing the linear component of
@@ -751,34 +744,7 @@ function [v_times, dff_mat] = load_dff_file(file_path)
         end
     end
 end
+end
 
-% function new_phrases = deal_with_time_gaps(phrases,max_phrase_gap)
-%     if isempty(phrases.phraseType)
-%         new_phrases = phrases;
-%         return;
-%     end
-%     new_phrases.phraseType = [-1000; phrases.phraseType(1)];
-%     new_phrases.phraseFileStartTimes = [phrases.phraseFileStartTimes(1) - 1, ...
-%         phrases.phraseFileStartTimes(1)];
-%     new_phrases.phraseFileEndTimes = [phrases.phraseFileStartTimes(1) - 0.001, ...
-%         phrases.phraseFileEndTimes(1)];
-%     
-%     for temp_cnt = 2:numel(phrases.phraseType)
-%         curr_gap = (phrases.phraseFileStartTimes(temp_cnt) - phrases.phraseFileEndTimes(temp_cnt-1));
-%         if (curr_gap > max_phrase_gap) 
-%             new_phrases.phraseType = [new_phrases.phraseType; 1000; -1000];
-%             new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileEndTimes(temp_cnt - 1)+0.001 ...
-%                 phrases.phraseFileStartTimes(temp_cnt) - min(0.005,curr_gap/10)];
-%             new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(temp_cnt - 1)+min(0.005,curr_gap/10) ...
-%                 phrases.phraseFileStartTimes(temp_cnt) - 0.001];
-%         end
-%         new_phrases.phraseType = [new_phrases.phraseType; phrases.phraseType(temp_cnt)];
-%         new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileStartTimes(temp_cnt)];
-%         new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(temp_cnt)];
-%                
-%     end
-%     new_phrases.phraseType = [new_phrases.phraseType; 1000];
-%     new_phrases.phraseFileStartTimes = [new_phrases.phraseFileStartTimes phrases.phraseFileEndTimes(end) + 0.001];
-%     new_phrases.phraseFileEndTimes = [new_phrases.phraseFileEndTimes phrases.phraseFileEndTimes(end) + 1];
-% end 
+
 
