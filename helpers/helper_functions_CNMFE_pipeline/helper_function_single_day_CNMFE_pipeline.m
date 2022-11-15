@@ -62,7 +62,7 @@ if ~skip_step_1
                                                             'output_folder',output_folder,'output_filename',output_filename,...
                                                             'max_frames',max_frames,'n_del_frames',n_del_frames,'resize_factor',resize_factor, ...
                                                             'bird_id',bird_id,'files_to_skip',files_to_skip);
-    save(fullfile(output_folder,'temp_vid_onsetd_and_file_names.mat'),'vid_onsets','file_names');
+    save(fullfile(output_folder,'temp_vid_onset_and_file_names.mat'),'vid_onsets','file_names');
 end
 
 % 2. Run the CNMFE pipeline
@@ -72,8 +72,12 @@ if ~skip_step_2
                                                     'skip_step_3',skip_step_3,'skip_step_4',skip_step_4,'adjust_pnr_cn_thresholds',adjust_pnr_cn_thresholds);
 end
 
-parsing_output_file = fullfile(output_folder,...
-                               [output_filename(1:end-4) '_source_extraction'],...
+source_extraction_target_folder = fullfile(output_folder,...
+                               [output_filename(1:end-4) '_source_extraction']);
+if ~exist(source_extraction_target_folder)
+    mkdir(source_extraction_target_folder);
+end                              
+parsing_output_file = fullfile(source_extraction_target_folder,...
                                'parsing_record.mat');
 save(parsing_output_file,'vid_onsets','file_names');
 
