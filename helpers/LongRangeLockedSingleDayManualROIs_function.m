@@ -53,7 +53,13 @@ mulcnt = 2; % spacing between trials in 3d plot.
 edges = [0 0]; % how much time in seconds to consider when inegrating signal outside phrases.
 % set to [before after] to integrate more signal.
 opacity_factor = 0.5; %opacity of 3d line plot
-zscoring_type = 0; % set to 1 to z-score the signal
+zscoring_type = 'none'; % set which type normalization to do (default is none)
+% Other options:
+%     'across_cells' - z-scores df/f values of all cells in each file separately
+%     This may be good for vizualizations but should not be done for
+%     statistics.
+%     'across_repeats' - z-scores signals of the ROI in study across files.
+%     This is good for statistics.
 max_phrase_gap = 0.5; %maximal gap (sec) between phrases to be considered one song.
 raster_edges = 2; % how many seconds to add around the raster.
 label_mark_loc = 0; % Where (in sec) to place the line's color bar w.r.t. 0.
@@ -365,14 +371,14 @@ for cnt = 1:size(hits,1)
     end    
     dff_tmp = dff(:,n_del_frames+1:end);
     if delete_frames == 1
-        if zscoring_type == 1
-            y = reshape(zscore(y(:)),size(y));                
+        if strcmp(zscoring_type,'across_cells')
+            y = reshape(zscore(dff_tmp(:)),size(dff_tmp));                
         else
-            y = dff(:,n_del_frames+1:end);
+            y = dff_tmp;
         end
         t = vidTimes(n_del_frames+1:end)+hvc_offset;
     else
-        if zscoring_type == 1
+        if strcmp(zscoring_type,'across_cells')
             y = [(dff(:,1:n_del_frames)-mean(dff_tmp(:)))/std(dff_tmp(:)) reshape(zscore(dff_tmp(:)),size(dff_tmp))];          
         else
             y = dff;
@@ -487,6 +493,11 @@ end
 set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
 %%
 %%%%%%%%%%% Perform all the statistical tests
+% if we choose to z-score the signal it will be dones here
+if strcmp(zscoring_type,'across_repeats')
+    sig_integrals_in = zscore(sig_integrals_in);
+end
+%
 if ~isempty(durations) & (extra_stat == 1) % run only if needed
     outstats.use_residuals = use_residuals;
     if use_residuals > 0 %remove dependencies on covariates if needed
