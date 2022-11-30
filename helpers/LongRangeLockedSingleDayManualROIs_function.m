@@ -60,6 +60,11 @@ zscoring_type = 'none'; % set which type normalization to do (default is none)
 %     statistics.
 %     'across_repeats' - z-scores signals of the ROI in study across files.
 %     This is good for statistics.
+%     'across_categories' - only works if order_flag<0 (we are correlating
+%     to phrase types and not durations). Will normalize by calculating the
+%     mean and SD in each category separately and later average across
+%     categories. This promotes comparing across days w.o. impact of
+%     category prevalence in different days.
 max_phrase_gap = 0.5; %maximal gap (sec) between phrases to be considered one song.
 raster_edges = 2; % how many seconds to add around the raster.
 label_mark_loc = 0; % Where (in sec) to place the line's color bar w.r.t. 0.
@@ -497,6 +502,23 @@ set(ax,'CameraPosition', [-0.3040 -360.4786 3.7984]);
 if strcmp(zscoring_type,'across_repeats')
     sig_integrals_in = zscore(sig_integrals_in);
 end
+if strcmp(zscoring_type,'across_categories')
+    cat_means = [];
+    cat_sds = [];
+    for cat_type = unique(id_flags)
+        cat_means = [cat_means; mean(sig_integrals_in(id_flags == cat_type))];
+        if sum(id_flags == cat_type) > 1
+            cat_sds = [cat_sds; std(sig_integrals_in(id_flags == cat_type))];
+        end
+    end
+    if ~isempty(cat_sds)
+        sig_integrals_in = (sig_integrals_in - mean(cat_means))/mean(cat_sds);
+    else
+        disp('Too few samples for across_categories kind of normalizations. Performing across_repeats normalizations.');
+        sig_integrals_in = zscore(sig_integrals_in);
+    end
+end
+
 %
 if ~isempty(durations) & (extra_stat == 1) % run only if needed
     outstats.use_residuals = use_residuals;
