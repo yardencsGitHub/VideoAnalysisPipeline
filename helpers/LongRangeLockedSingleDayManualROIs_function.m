@@ -127,6 +127,7 @@ end
 addpath(genpath([GithubDir 'VideoAnalysisPipeline']),'-end');
 CNMFEfolder = fullfile(GithubDir,'CNMF_E_CohenLab');
 addpath(genpath(CNMFEfolder),'-end');
+addpath(genpath([GithubDir 'measures-of-effect-size-toolbox']),'-end');
 
 %% parameters
 %BaseDir = '/Users/yardenc/Documents/Experiments/Imaging/Data/CanaryData/';
@@ -539,6 +540,11 @@ if ~isempty(durations) & (extra_stat == 1) % run only if needed
             if anova_type == 1
                 [p,ANOVATAB,STATS] = anova1(sig_integrals_in,id_flags); %one-way ANOVA
                 outstats.type = '1-way ANOVA';
+                [CIstats,~]=mes1way(sig_integrals_in,'eta2','group',id_flags);
+                outstats.eta2 = CIstats.eta2;
+                outstats.eta2CI = CIstats.eta2Ci;
+                outstats.df = [ANOVATAB{2,3} ANOVATAB{3,3}];
+                outstats.F = ANOVATAB{2,5};
             elseif anova_type == 2
                 [p,ANOVATAB,STATS] = kruskalwallis(sig_integrals_in,id_flags); %Kruskal-Wallis
                 outstats.type = '1-way KruskalWallis';
@@ -599,8 +605,10 @@ if ~isempty(durations) & (extra_stat == 1) % run only if needed
         
     else    
         [r, p] = corr(durations,sig_integrals_in); % Pearson correlation
+        [~,~,RLO,RUP]=corrcoef(durations,sig_integrals_in);
         outstats.type = 'Pearson Corr.';
         outstats.r = r; outstats.p = p;
+        outstats.rhoCI = [RLO(1,2) RUP(1,2)];
         outvars.durations = durations;
         figure('Visible','on'); plot(durations,sig_integrals_in,'bo','MarkerSize',12,'MarkerFaceColor','none','MarkerEdgeColor','k');
         hndls = [hndls; gca];
